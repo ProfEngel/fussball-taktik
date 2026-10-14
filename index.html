@@ -85,7 +85,6 @@ header {
 .title-group h1 { font-size: 12px; font-weight: 800; letter-spacing: 0.3px; line-height: 1.1; }
 .title-group span { font-size: 9px; color: #94a3b8; }
 
-/* Audience Switcher (Kids vs Coach) */
 .audience-switch {
   display: flex;
   background: #090e15;
@@ -167,7 +166,6 @@ header {
   height: calc(100dvh - var(--header-h) - var(--sat) - var(--sab));
 }
 
-/* PITCH WRAPPER */
 #pitch-container {
   flex: 1;
   position: relative;
@@ -340,7 +338,6 @@ header {
   box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
 }
 
-/* Kids Panel Big Friendly Buttons */
 .btn-kid-huge {
   padding: 12px 10px;
   border-radius: 12px;
@@ -457,6 +454,11 @@ header {
             <stop offset="100%" stop-color="#0f3b1e"/>
           </linearGradient>
 
+          <!-- Warning hatch pattern for abandoned holes / danger zones -->
+          <pattern id="hatch-red" width="14" height="14" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="14" stroke="#ef4444" stroke-width="2.5" opacity="0.38" />
+          </pattern>
+
           <!-- Markers -->
           <marker id="arr-yellow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M 0 1 L 8 5 L 0 9 z" fill="#facc15"/>
@@ -530,6 +532,7 @@ header {
         <!-- DYNAMISCHE TACTICAL LAYERS -->
         <g id="layer-cones"></g>        <!-- Passschatten & Deckungskegel -->
         <g id="layer-zones"></g>        <!-- Wirkungskreise -->
+        <g id="layer-holes"></g>        <!-- Verlassene Räume & Offene Löcher -->
         <g id="layer-gaps"></g>         <!-- Lücken & Schnittstellen in der Kette -->
         <g id="layer-offside"></g>      <!-- Die 3 Abseitslinien: Gegner, Stürmer, Eigene Kette -->
         <g id="layer-drawings"></g>     <!-- Telestration / Freihand-Zeichnungen -->
@@ -581,6 +584,16 @@ header {
 
         <div class="card">
           <div class="card-title">
+            <span>🕳️ Löcher erkennen & absichern!</span>
+          </div>
+          <p style="font-size:10px; color:#cbd5e1; line-height:1.4;">
+            Wenn deine Verteidigerin nach vorne rennt, entsteht hinten ein rotes <strong style="color:#f87171;">Loch</strong>!
+            Als Sechserin oder Außenbahn musst du zurückhelfen, damit die Gegnerin nicht durchrennen kann!
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
             <span>⚽ Passen üben (Freispiel)</span>
           </div>
           <p style="font-size:10px; color:#cbd5e1; margin-bottom:6px; line-height:1.35;">
@@ -589,16 +602,6 @@ header {
           <button class="btn green span2" onclick="toggleFreePlay()">
             🎮 Freispiel starten / beenden
           </button>
-        </div>
-
-        <div class="card">
-          <div class="card-title">
-            <span>🚫 Abseits leicht verstehen</span>
-          </div>
-          <p style="font-size:10px; color:#cbd5e1; line-height:1.4;">
-            Schau auf die <strong style="color:#38bdf8;">blaue Linie</strong> beim letzten gegnerischen Verteidiger:
-            Stehst du näher am gegnerischen Tor als diese Linie, wenn der Pass kommt, bist du im <strong>Abseits</strong>!
-          </p>
         </div>
       </div>
 
@@ -613,7 +616,7 @@ header {
             <span>1. Breite & Auffächern (Ballbesitz)</span>
             <span class="badge-pill">Weit</span>
           </div>
-          <div class="scenario-desc">Ausgangsposition bei eigenem Ballbesitz / Spieleröffnung:</div>
+          <div class="scenario-desc">Ausgangsposition bei eigenem Ballbesitz:</div>
           <div class="btn-grid-case">
             <button class="btn-case best" onclick="applyPreset('wide')">
               🟢 Best Case
@@ -697,7 +700,7 @@ header {
             </button>
             <button class="btn-case worst" onclick="applyPreset('defenseWorst')">
               🔴 Worst Case
-              <span class="mini">IV lässt sich rausziehen (Lücke!)</span>
+              <span class="mini">IV lässt sich rausziehen (Loch!)</span>
             </button>
           </div>
         </div>
@@ -733,7 +736,7 @@ header {
           <div class="btn-grid">
             <button class="btn primary span2" onclick="simulateOpponentAttackFromCurrent()">
               🚨 ▶️ Gegner-Angriff ab aktuellem Stand simulieren!
-              <span class="sub-desc">Gegner bestraft exakt die Lücke, die du aufgemacht hast</span>
+              <span class="sub-desc">Gegner bestraft exakt das Loch, das du aufgemacht hast</span>
             </button>
           </div>
         </div>
@@ -918,7 +921,7 @@ header {
         </div>
       </div>
 
-      <!-- ── PERMANENT TOGGLES (WIRKUNGSKREISE, ABSEITS, KEGEL) ── -->
+      <!-- ── PERMANENT TOGGLES (WIRKUNGSKREISE, ABSEITS, KEGEL, LÖCHER) ── -->
       <div class="card">
         <div class="card-title">
           <span>👁️ Taktische Einblendungen</span>
@@ -928,6 +931,7 @@ header {
           <button class="btn active-toggle" id="btn-offside" onclick="toggleOffside()">🔵 Abseits-Linien (3x)</button>
           <button class="btn active-toggle" id="btn-cones" onclick="toggleCones()">🔺 Passschatten / Kegel</button>
           <button class="btn active-toggle" id="btn-gaps" onclick="toggleGaps()">⚠️ Ketten-Lücken</button>
+          <button class="btn active-toggle span2" id="btn-holes" onclick="toggleHoles()">🕳️ Offene Löcher (Verlassene Räume)</button>
         </div>
       </div>
 
@@ -951,6 +955,19 @@ header {
   <div class="help-box">
     <button class="help-close" onclick="closeHelp()">✕</button>
     <h2>📖 TSV Plattenhardt – Taktikboard Handbuch</h2>
+
+    <div class="help-section">
+      <h3>🕳️ Offene Löcher & Verlassene Räume erklärt</h3>
+      <div class="rule-box">
+        <p>Jede Verteidigerin und die 6 haben eine taktische <strong>Soll-Position</strong> (Heimat-Sektor):</p>
+        <ul style="margin-top:6px;">
+          <li>Wenn z. B. die <strong>LV (Nr. 2)</strong> weit nach vorne rennt oder nach innen zieht, färbt sich ihr verlassener Raum sofort <strong style="color:#ef4444;">rot schraffiert</strong>.</li>
+          <li>Am ursprünglichen Platz erscheint ein Geister-Kreis mit Beschriftung <em>„SOLL-ORT"</em> und ein Pfeil zeigt, wo sie hingerannt ist.</li>
+          <li>Ein roter Gefahren-Pfeil der gegnerischen Außenspielerin zeigt an, wie der Gegner in dieses offene Loch stoßen kann!</li>
+          <li>Sobald die Spielerin zurückgezogen wird, schließt sich das Loch in Echtzeit wieder!</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="help-section">
       <h3>🔵 Die 3 Abseitslinien erklärt</h3>
@@ -1015,6 +1032,7 @@ const layerTactics   = document.getElementById('layer-tactics');
 const layerBubbles   = document.getElementById('layer-bubbles');
 const layerOffside   = document.getElementById('layer-offside');
 const layerCones     = document.getElementById('layer-cones');
+const layerHoles     = document.getElementById('layer-holes');
 const layerGaps      = document.getElementById('layer-gaps');
 const layerDrawings  = document.getElementById('layer-drawings');
 const layerCorridors = document.getElementById('layer-corridors');
@@ -1026,6 +1044,7 @@ let showZones       = false;
 let showOffside     = true;    // 3 lines (Opponent, Striker, Own defense)
 let showCones       = true;    // Ball-relative Cover shadows
 let showGaps        = true;    // Defensive chain gap detection
+let showHoles       = true;    // Abandoned defensive zones / holes
 let showCorridors   = false;
 
 let activeTab       = 'tactic';
@@ -1071,6 +1090,46 @@ const initialPlayers = [
 
 let players = JSON.parse(JSON.stringify(initialPlayers));
 
+// ═══ DEFENSIVE SECTORS (HOMES & ABANDONED HOLES DEFINITION) ═══
+const DEFENSIVE_SECTORS = [
+  {
+    id: 'tsv-2',
+    role: 'LV',
+    homeX: 220, homeY: 150,
+    zone: { x: 100, y: 40, w: 190, h: 170 },
+    name: 'Linke Abwehrseite (LV-Zone)',
+    oppId: 'geg-7',
+    threshold: 110
+  },
+  {
+    id: 'tsv-4',
+    role: 'IV',
+    homeX: 190, homeY: 330,
+    zone: { x: 100, y: 230, w: 165, h: 200 },
+    name: 'Strafraum-Zentrum (IV-Zone)',
+    oppId: 'geg-9',
+    threshold: 95
+  },
+  {
+    id: 'tsv-3',
+    role: 'RV',
+    homeX: 220, homeY: 510,
+    zone: { x: 100, y: 450, w: 190, h: 170 },
+    name: 'Rechte Abwehrseite (RV-Zone)',
+    oppId: 'geg-11',
+    threshold: 110
+  },
+  {
+    id: 'tsv-6',
+    role: 'ZDM',
+    homeX: 340, homeY: 330,
+    zone: { x: 265, y: 230, w: 150, h: 200 },
+    name: 'Rückraum vor der Kette (6er-Raum)',
+    oppId: 'geg-10',
+    threshold: 120
+  }
+];
+
 // ──────────────────────────────────────────────────────────
 // AUDIENCE SWITCHER: FUßBALLERINNEN VS TRAINER
 // ──────────────────────────────────────────────────────────
@@ -1113,32 +1172,29 @@ function switchMainTab(tab) {
 }
 
 // ──────────────────────────────────────────────────────────
-// DIE 3 ABSEITSLINIEN (GEGNER, STÜRMER, EIGENE KETTE)
+// DIE 3 ABSEITSLINIEN
 // ──────────────────────────────────────────────────────────
-// 1. Gegnerische Abseitslinie: vorletzter Gegner vor gegnerischem Tor (x=950)
 function getOpponentOffsideX() {
   const opps = players
     .filter(p => p.team === 'geg')
     .map(p => p.x)
-    .sort((a, b) => b - a); // descending: closest to opponent goal (x=950) first
-  if (opps.length >= 2) return opps[1]; // 2nd closest = last outfield defender!
+    .sort((a, b) => b - a);
+  if (opps.length >= 2) return opps[1];
   if (opps.length === 1) return opps[0];
   return 780;
 }
 
-// 2. Vorderste TSV Spielerin (Stürmerin)
 function getForemostStriker() {
   return players
     .filter(p => p.team === 'tsv' && p.role !== 'TW')
     .sort((a, b) => b.x - a.x)[0];
 }
 
-// 3. Eigene Kettenhöhe (letzte TSV Verteidigerin vor eigenem Tor x=50)
 function getOwnDefensiveLineX() {
   const defs = players
     .filter(p => p.team === 'tsv' && p.role !== 'TW')
     .map(p => p.x)
-    .sort((a, b) => a - b); // ascending: closest to own goal (x=50) first
+    .sort((a, b) => a - b);
   return defs.length > 0 ? defs[0] : 190;
 }
 
@@ -1149,7 +1205,7 @@ function isOffside(p) {
 }
 
 // ──────────────────────────────────────────────────────────
-// COVER SHADOWS (PASSSCHATTEN VOM BALL DURCH GEGNER)
+// COVER SHADOWS
 // ──────────────────────────────────────────────────────────
 function isInCoverShadow(p) {
   if (p.team !== 'tsv') return false;
@@ -1202,23 +1258,24 @@ function detectDefensiveGaps() {
 }
 
 // ──────────────────────────────────────────────────────────
-// OVERLAYS RENDERING (DIE 3 ABSEITSLINIEN, KEGEL & LÜCKEN)
+// OVERLAYS RENDERING (DIE 3 ABSEITSLINIEN, KEGEL, LÖCHER & LÜCKEN)
 // ──────────────────────────────────────────────────────────
 function updateTacticalOverlays() {
   layerOffside.innerHTML = '';
   layerCones.innerHTML   = '';
+  layerHoles.innerHTML   = '';
   layerGaps.innerHTML    = '';
   layerZones.innerHTML   = '';
 
   const ball = players.find(p => p.id === 'ball') || { x: 300, y: 330 };
 
-  // ════ DIE 3 ABSEITSLINIEN ════
+  // ════ 1. DIE 3 ABSEITSLINIEN ════
   if (showOffside) {
     const oppOffX = getOpponentOffsideX();
     const striker = getForemostStriker();
     const ownDefX = getOwnDefensiveLineX();
 
-    // 1. Gegnerische Abseitslinie (Blau gestrichelt)
+    // Gegnerische Abseitslinie (Blau gestrichelt)
     const lineOpp = mkEl('line');
     setAttrs(lineOpp, { x1: oppOffX, y1: 30, x2: oppOffX, y2: 630,
       stroke: '#38bdf8', 'stroke-width': 2.5,
@@ -1230,13 +1287,12 @@ function updateTacticalOverlays() {
     lblOpp.textContent = 'ABSEITSLINIE GEGNER';
     layerOffside.appendChild(lblOpp);
 
-    // Abseitszone schattiert
     const shadeOpp = mkEl('rect');
     setAttrs(shadeOpp, { x: oppOffX, y: 30, width: Math.max(0, 950 - oppOffX), height: 600,
       fill: 'rgba(56,189,248,0.07)', 'pointer-events': 'none' });
     layerOffside.appendChild(shadeOpp);
 
-    // 2. Stürmer-Referenzlinie (Gelb oder Rot wenn im Abseits)
+    // Stürmer-Referenzlinie (Gelb oder Rot)
     if (striker) {
       const isStOff = isOffside(striker);
       const stColor = isStOff ? '#ef4444' : '#facc15';
@@ -1252,7 +1308,7 @@ function updateTacticalOverlays() {
       layerOffside.appendChild(lblSt);
     }
 
-    // 3. Eigene Abseitslinie / Kettenhöhe vor eigenem Tor (Grün gestrichelt)
+    // Eigene Abseitslinie / Kettenhöhe (Grün gestrichelt)
     const lineOwn = mkEl('line');
     setAttrs(lineOwn, { x1: ownDefX, y1: 30, x2: ownDefX, y2: 630,
       stroke: '#22c55e', 'stroke-width': 2,
@@ -1265,7 +1321,7 @@ function updateTacticalOverlays() {
     layerOffside.appendChild(lblOwn);
   }
 
-  // ════ PASSSCHATTEN / DECKUNGSKEGEL ════
+  // ════ 2. PASSSCHATTEN / DECKUNGSKEGEL ════
   if (showCones) {
     players.filter(p => p.team === 'geg' && p.role !== 'TW').forEach(opp => {
       const dx = opp.x - ball.x;
@@ -1303,7 +1359,83 @@ function updateTacticalOverlays() {
     });
   }
 
-  // ════ LÜCKEN IN DER KETTE ════
+  // ════ 3. OFFENE LÖCHER & VERLASSENE RÄUME (DYNAMISCHE GEFAHRENZONEN) ════
+  if (showHoles) {
+    DEFENSIVE_SECTORS.forEach(sec => {
+      const p = players.find(x => x.id === sec.id);
+      if (!p) return;
+      const dist = Math.hypot(p.x - sec.homeX, p.y - sec.homeY);
+
+      if (dist > sec.threshold) {
+        // A. Shaded Red Abandoned Zone
+        const rectBg = mkEl('rect');
+        setAttrs(rectBg, {
+          x: sec.zone.x, y: sec.zone.y, width: sec.zone.w, height: sec.zone.h, rx: 12,
+          fill: 'rgba(239, 68, 68, 0.16)',
+          stroke: '#ef4444', 'stroke-width': 2, 'stroke-dasharray': '6 4',
+          'pointer-events': 'none'
+        });
+        layerHoles.appendChild(rectBg);
+
+        // Hatched Pattern Overlay
+        const rectHatch = mkEl('rect');
+        setAttrs(rectHatch, {
+          x: sec.zone.x, y: sec.zone.y, width: sec.zone.w, height: sec.zone.h, rx: 12,
+          fill: 'url(#hatch-red)', 'pointer-events': 'none'
+        });
+        layerHoles.appendChild(rectHatch);
+
+        // B. Ghost Marker at Home Position
+        const ghostG = mkEl('g');
+        ghostG.setAttribute('transform', `translate(${sec.homeX}, ${sec.homeY})`);
+        ghostG.setAttribute('pointer-events', 'none');
+        ghostG.innerHTML = `
+          <circle r="20" fill="rgba(15,23,42,0.85)" stroke="#ef4444" stroke-width="2" stroke-dasharray="4 3"/>
+          <text text-anchor="middle" y="5" font-size="12" font-weight="900" fill="#fca5a5">${p.num}</text>
+          <rect x="-24" y="22" width="48" height="14" rx="4" fill="rgba(127,29,29,0.92)"/>
+          <text text-anchor="middle" y="32" font-size="8" font-weight="800" fill="#fecaca">SOLL-ORT</text>
+        `;
+        layerHoles.appendChild(ghostG);
+
+        // C. Trace line from Soll-Ort to current player location
+        const lineTrace = mkEl('line');
+        setAttrs(lineTrace, {
+          x1: sec.homeX, y1: sec.homeY, x2: p.x, y2: p.y,
+          stroke: '#f87171', 'stroke-width': 2, 'stroke-dasharray': '5 4',
+          'marker-end': 'url(#arr-red)', 'pointer-events': 'none'
+        });
+        layerHoles.appendChild(lineTrace);
+
+        // D. Warning Badge inside the hole
+        const midX = sec.zone.x + sec.zone.w / 2;
+        const midY = sec.zone.y + 24;
+        const badgeG = mkEl('g');
+        badgeG.setAttribute('transform', `translate(${midX}, ${midY})`);
+        badgeG.setAttribute('pointer-events', 'none');
+        badgeG.innerHTML = `
+          <rect x="-65" y="-11" width="130" height="22" rx="5" fill="#7f1d1d" stroke="#f87171" stroke-width="1.5"/>
+          <text y="4" text-anchor="middle" font-size="9" font-weight="900" fill="#fff">🕳️ LOCH: ${sec.role} fehlt (${Math.round(dist/10)}m)!</text>
+        `;
+        layerHoles.appendChild(badgeG);
+
+        // E. Opponent Exploitation Threat Arrow
+        const opp = players.find(x => x.id === sec.oppId);
+        if (opp) {
+          const oppTargetX = sec.zone.x + sec.zone.w * 0.7;
+          const oppTargetY = sec.zone.y + sec.zone.h * 0.5;
+          const lineThreat = mkEl('line');
+          setAttrs(lineThreat, {
+            x1: opp.x, y1: opp.y, x2: oppTargetX, y2: oppTargetY,
+            stroke: '#ef4444', 'stroke-width': 2.5, 'stroke-dasharray': '6 4',
+            'marker-end': 'url(#arr-red)', 'pointer-events': 'none'
+          });
+          layerHoles.appendChild(lineThreat);
+        }
+      }
+    });
+  }
+
+  // ════ 4. LÜCKEN IN DER KETTE ════
   if (showGaps) {
     const gaps = detectDefensiveGaps();
     gaps.forEach(g => {
@@ -1329,7 +1461,7 @@ function updateTacticalOverlays() {
     });
   }
 
-  // ════ WIRKUNGSKREISE ════
+  // ════ 5. WIRKUNGSKREISE ════
   if (showZones) {
     players.forEach(p => {
       if (p.team === 'ball') return;
@@ -1467,6 +1599,13 @@ function showLiveDragAnalysis(p) {
   }
 
   if (p.team === 'tsv') {
+    // Check if player created an open hole
+    const abandoned = DEFENSIVE_SECTORS.find(s => s.id === p.id && Math.hypot(p.x - s.homeX, p.y - s.homeY) > s.threshold);
+    if (abandoned) {
+      setStatus(`🕳️ LOCH ENTSTANDEN: ${abandoned.name} verlassen! Gegner kann in den freien Raum stoßen!`, 'warning');
+      return;
+    }
+
     if (isOffside(p)) {
       setStatus(`⛔ Nr. ${p.num} (${p.role}) steht im ABSEITS! (Hinter der blauen Abseitslinie)`, 'warning');
       return;
@@ -1481,19 +1620,11 @@ function showLiveDragAnalysis(p) {
         setStatus(`🚨 LÜCKE IN DER KETTE! Abstand ${Math.round(gaps[0].dist/10)}m – Raum offen!`, 'warning');
         return;
       }
-      if (p.x > 440) {
-        setStatus(`⚠️ ${p.role} steht extrem hoch! Eigener Rückraum ist ungedeckt für Konter!`, 'warning');
-        return;
-      }
-      setStatus(`✅ ${p.role} positioniert – Kette steht kompakt.`, 'success');
+      setStatus(`✅ ${p.role} steht kompakt in ihrer Zone.`, 'success');
       return;
     }
     if (p.is6) {
-      if (p.x > 480 || p.y < 180 || p.y > 480) {
-        setStatus('⚠️ Die 6 hat ihre zentrale Schaltposition verlassen – Zentrum unbesetzt!', 'warning');
-      } else {
-        setStatus('✅ Die 6 ist zentral anspielbereit – kann aufdrehen & Spiel verlagern!', 'success');
-      }
+      setStatus('✅ Die 6 ist zentral anspielbereit – kann aufdrehen & Spiel verlagern!', 'success');
       return;
     }
     setStatus(`✅ Nr. ${p.num} (${p.role}) frei & anspielbar!`, 'success');
@@ -1503,7 +1634,7 @@ function showLiveDragAnalysis(p) {
 }
 
 // ──────────────────────────────────────────────────────────
-// TAKTIK-PRESETS: BEST CASE VS WORST CASE
+// TAKTIK-PRESETS
 // ──────────────────────────────────────────────────────────
 function applyPreset(type) {
   clearDrawings();
@@ -1515,7 +1646,6 @@ function applyPreset(type) {
     return;
   }
 
-  // 1. WEIT
   if (type === 'wide') {
     setStatus('🟢 BEST CASE: WEIT MACHEN! AV an der Linie, ST bindet IV, Raum für die 6!', 'success');
     targets = [
@@ -1542,10 +1672,7 @@ function applyPreset(type) {
       { id:'tsv-9',  x:430, y:330 },
       { id:'ball',   x:235, y:330 }
     ];
-  }
-
-  // 2. ENG
-  else if (type === 'compact') {
+  } else if (type === 'compact') {
     setStatus('🟢 BEST CASE: ENG MACHEN! Zentrum dicht, Kette rückt ein, gemeinsam verteidigen!', 'success');
     targets = [
       { id:'tsv-4',  x:210, y:330 },
@@ -1561,16 +1688,13 @@ function applyPreset(type) {
   } else if (type === 'compactWorst') {
     setStatus('🔴 WORST CASE: KETTE ZERRISSEN! Scheunentor im Zentrum, Abseits aufgehoben!', 'warning');
     targets = [
-      { id:'tsv-4',  x:130, y:330 }, // schläft tief hinten
-      { id:'tsv-2',  x:380, y:120 }, // weit weg
+      { id:'tsv-4',  x:130, y:330 },
+      { id:'tsv-2',  x:380, y:120 },
       { id:'tsv-3',  x:280, y:520 },
-      { id:'tsv-6',  x:420, y:440 }, // Zentrum leer
+      { id:'tsv-6',  x:420, y:440 },
       { id:'ball',   x:360, y:300 }
     ];
-  }
-
-  // 3. EINWURF
-  else if (type === 'throwinGood') {
+  } else if (type === 'throwinGood') {
     setStatus('🟢 BEST CASE EINWURF: LM löst sich VOR die Gegnerin in die Schnittstelle!', 'success');
     targets = [
       { id:'tsv-2',  x:420, y:30  },
@@ -1588,17 +1712,14 @@ function applyPreset(type) {
       { id:'tsv-6',  x:320, y:240 },
       { id:'ball',   x:420, y:40  }
     ];
-  }
-
-  // 4. ANGRIFFSSZENARIO (BOXBESETZUNG)
-  else if (type === 'attackBest') {
+  } else if (type === 'attackBest') {
     setStatus('🟢 BEST CASE ANGRIFF: LM flankt, ST kreuzt 1. Pfosten, RM am 2., 10er an Kante 16er!', 'success');
     targets = [
-      { id:'tsv-7',  x:810, y:90  }, // flankt von außen
-      { id:'tsv-9',  x:880, y:280 }, // 1. Pfosten
-      { id:'tsv-11', x:890, y:380 }, // 2. Pfosten
-      { id:'tsv-10', x:770, y:330 }, // Rückraum Kante 16er!
-      { id:'tsv-6',  x:610, y:330 }, // Kontersicherung
+      { id:'tsv-7',  x:810, y:90  },
+      { id:'tsv-9',  x:880, y:280 },
+      { id:'tsv-11', x:890, y:380 },
+      { id:'tsv-10', x:770, y:330 },
+      { id:'tsv-6',  x:610, y:330 },
       { id:'ball',   x:800, y:100 }
     ];
   } else if (type === 'attackWorst') {
@@ -1607,14 +1728,11 @@ function applyPreset(type) {
       { id:'tsv-7',  x:810, y:90  },
       { id:'tsv-9',  x:910, y:320 },
       { id:'tsv-11', x:915, y:330 },
-      { id:'tsv-10', x:905, y:340 }, // alle auf einem Fleck
+      { id:'tsv-10', x:905, y:340 },
       { id:'tsv-6',  x:780, y:330 },
       { id:'ball',   x:800, y:100 }
     ];
-  }
-
-  // 5. VERTEIDIGUNGSSZENARIO (EIGENER 16ER)
-  else if (type === 'defenseBest') {
+  } else if (type === 'defenseBest') {
     setStatus('🟢 BEST CASE DEFENSE: Kompakte Box, Doppeln auf Außen, Zentrum dicht!', 'success');
     targets = [
       { id:'tsv-1',  x:70,  y:330 },
@@ -1634,10 +1752,10 @@ function applyPreset(type) {
     setStatus('🔴 WORST CASE DEFENSE: IV lässt sich zur Eckfahne locken → Scheunentor vor Tor!', 'warning');
     targets = [
       { id:'tsv-1',  x:70,  y:330 },
-      { id:'tsv-4',  x:160, y:90  }, // IV rennt blind an die Eckfahne!
+      { id:'tsv-4',  x:160, y:90  },
       { id:'tsv-2',  x:180, y:110 },
       { id:'tsv-3',  x:150, y:480 },
-      { id:'geg-9',  x:120, y:330 }, // Gegner steht völlig frei vorm Tor!
+      { id:'geg-9',  x:120, y:330 },
       { id:'ball',   x:170, y:95  }
     ];
   }
@@ -1661,10 +1779,8 @@ function applyPreset(type) {
 }
 
 // ──────────────────────────────────────────────────────────
-// LIVE-SIMULATIONEN: BEST VS WORST CASE
+// LIVE-SIMULATIONEN
 // ──────────────────────────────────────────────────────────
-
-// SZENARIO 1: DIE 6 SUCHEN
 function simFind6Best() {
   clearDrawings();
   setStatus('🟢 SZENARIO 1 (BEST): Pass zur 6 → Schulterblick & Aufdrehen → Freier Flügel!', 'success');
@@ -1694,8 +1810,8 @@ function simFind6Worst() {
   setStatus('🔴 SZENARIO 1 (WORST): 6er im Schatten / Blinder Pass → Gegner fängt ab & schließt ab!', 'warning');
   animateTo([
     { id:'tsv-4',  x:180, y:330 },
-    { id:'geg-6',  x:280, y:330 }, // Gegner blockiert
-    { id:'tsv-6',  x:340, y:330 }, // 6 im Schatten
+    { id:'geg-6',  x:280, y:330 },
+    { id:'tsv-6',  x:340, y:330 },
     { id:'ball',   x:185, y:330 }
   ], 600, () => {
     drawArrow(180, 330, 280, 330, '#ef4444', 'arr-red');
@@ -1713,7 +1829,6 @@ function simFind6Worst() {
   });
 }
 
-// SZENARIO 2: FLÜGELANGRIFF
 function simWingAttackBest() {
   clearDrawings();
   setStatus('🟢 SZENARIO 2 (BEST): Flanke auf den 1. Pfosten, Stürmerin kreuzt, Tor!', 'success');
@@ -1754,15 +1869,9 @@ function simWingAttackWorst() {
   });
 }
 
-// SZENARIO 3: EINWURF
-function simThrowinBest() {
-  applyPreset('throwinGood');
-}
-function simThrowinWorst() {
-  applyPreset('throwinBad');
-}
+function simThrowinBest()  { applyPreset('throwinGood'); }
+function simThrowinWorst() { applyPreset('throwinBad'); }
 
-// SZENARIO 4: RESTVERTEIDIGUNG
 function simRestDefenseBest() {
   clearDrawings();
   setStatus('🟢 SZENARIO 4 (BEST): LV sichert den Flügel ab → Konterpass wird souverän abgelaufen!', 'success');
@@ -1776,19 +1885,10 @@ function simRestDefenseBest() {
   });
 }
 
-function simRestDefenseWorst() {
-  demoErrorLV();
-}
+function simRestDefenseWorst() { demoErrorLV(); }
+function simBoxDefenseBest()  { applyPreset('defenseBest'); }
+function simBoxDefenseWorst() { applyPreset('defenseWorst'); }
 
-// SZENARIO 5: BOX-VERTEIDIGUNG
-function simBoxDefenseBest() {
-  applyPreset('defenseBest');
-}
-function simBoxDefenseWorst() {
-  applyPreset('defenseWorst');
-}
-
-// SZENARIO 6: GEGENPRESSING
 function simCounterPressBest() {
   clearDrawings();
   setStatus('🟢 SZENARIO 6 (BEST): 3-Sekunden-Gegenpressing! Sofort zu dritt jagen → Ballgewinn!', 'success');
@@ -1826,7 +1926,6 @@ function simCounterPressWorst() {
   });
 }
 
-// KIDS BUTTON ACTIONS
 function simMakeWideKids() {
   applyPreset('wide');
   showSpeechBubble('tsv-2', 'Ich bin frei an der Linie!', 2500);
@@ -1847,7 +1946,32 @@ function simulateOpponentAttackFromCurrent() {
   const lv = players.find(p => p.id === 'tsv-2');
   const gegST = players.find(p => p.id === 'geg-9');
 
-  if (gaps.length > 0) {
+  // Check if an abandoned hole exists
+  const abandoned = DEFENSIVE_SECTORS.find(s => {
+    const p = players.find(x => x.id === s.id);
+    return p && Math.hypot(p.x - s.homeX, p.y - s.homeY) > s.threshold;
+  });
+
+  if (abandoned) {
+    const targetHoleX = abandoned.zone.x + abandoned.zone.w * 0.6;
+    const targetHoleY = abandoned.zone.y + abandoned.zone.h * 0.5;
+
+    setStatus(`🚨 GEGNER BESTRAFT DAS OFFENE LOCH (${abandoned.name})! Pass direkt in den freien Raum!`, 'warning');
+    drawArrow(gegST ? gegST.x : 540, gegST ? gegST.y : 330, targetHoleX, targetHoleY, '#ef4444', 'arr-red');
+
+    animateTo([
+      { id: 'ball', x: targetHoleX, y: targetHoleY },
+      { id: 'geg-7', x: targetHoleX - 10, y: targetHoleY }
+    ], 800, () => {
+      showSpeechBubble('geg-7', '⚡ Freier Raum!', 2500);
+      setTimeout(() => {
+        drawArrow(targetHoleX, targetHoleY, 80, 330, '#ef4444', 'arr-red');
+        animateTo([{ id: 'ball', x: 85, y: 330 }], 500, () => {
+          setStatus('❌ Torchance für den Gegner! Konsequenz des verlassenen Raumes.', 'warning');
+        });
+      }, 1000);
+    });
+  } else if (gaps.length > 0) {
     const targetGap = gaps[0];
     const holeX = (targetGap.p1.x + targetGap.p2.x) / 2;
     const holeY = (targetGap.p1.y + targetGap.p2.y) / 2;
@@ -1866,17 +1990,6 @@ function simulateOpponentAttackFromCurrent() {
           setStatus('❌ Torchance für den Gegner! Konsequenz der offenen Kette.', 'warning');
         });
       }, 1000);
-    });
-  } else if (lv && lv.x > 380) {
-    setStatus('🚨 LV FEHLT HINTEN! Gegner spielt den Ball in ihren leeren Raum!', 'warning');
-    const holeX = 180;
-    const holeY = 140;
-    drawArrow(540, 330, holeX, holeY, '#ef4444', 'arr-red');
-    animateTo([
-      { id: 'ball', x: holeX, y: holeY },
-      { id: 'geg-7', x: holeX + 15, y: holeY }
-    ], 900, () => {
-      showSpeechBubble('geg-7', 'Danke für den Platz!', 2500);
     });
   } else {
     setStatus('🛡️ GUTE VERTEIDIGUNG! Kette steht kompakt – Gegner findet keinen Passweg!', 'success');
@@ -2080,6 +2193,11 @@ function toggleCones() {
 function toggleGaps() {
   showGaps = !showGaps;
   document.getElementById('btn-gaps').classList.toggle('active-toggle', showGaps);
+  updateTacticalOverlays();
+}
+function toggleHoles() {
+  showHoles = !showHoles;
+  document.getElementById('btn-holes').classList.toggle('active-toggle', showHoles);
   updateTacticalOverlays();
 }
 function toggleCorridors() {

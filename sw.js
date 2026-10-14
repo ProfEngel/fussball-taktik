@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tsv-taktik-v5';
+const CACHE_NAME = 'tsv-taktik-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

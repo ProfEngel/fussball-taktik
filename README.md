@@ -60,13 +60,22 @@ Sowohl in der **Taktik-Tafel** als auch in der **Live-Simulation** sind die wich
 
 ---
 
-### 4. 🔺 Moderner Passschatten (Cover Shadow)
+### 4. 🕳️ Automatische Erkennung offener Löcher & verlassener Räume
+- Wenn eine Spielerin (z. B. Linksverteidigerin Nr. 2 oder Sechserin Nr. 6) von Hand aus ihrer taktischen Verantwortungszone wegbewegt wird (z. B. blind nach vorne stürmt):
+  - Markiert die Taktiktafel den verwaisten Raum rot-schraffiert als Gefahrenzone (**„LOCH: LV fehlt!"**).
+  - Zeigt einen Geisterkreis am Soll-Standort sowie eine Bewegungslinie zur aktuellen Position.
+  - Zeichnet den typischen gegnerischen Angriffs- / Konterpfeil ein, der genau in diese offene Lücke zielt.
+  - Lässt sich über den Button **„🕳️ Löcher"** flexibel ein- und ausblenden.
+
+---
+
+### 5. 🔺 Moderner Passschatten (Cover Shadow)
 - Jeder gegnerische Verteidiger wirft einen dynamischen Deckungskegel *vom Ball weg*.
 - Spielerinnen, die im Schatten stehen, werden sofort als nicht anspielbar markiert.
 
 ---
 
-### 5. 🎨 Zeichen- & Telestration-Tools
+### 6. 🎨 Zeichen- & Telestration-Tools
 - **Freihand-Stift** (Gelb, Weiß, Rot).
 - **Pass-Pfeile** (gestrichelt) und **Laufweg-Pfeile** (durchgezogen).
 - **📊 5 Korridore:** Flügel links, Halbraum links, Zentrum, Halbraum rechts, Flügel rechts einblendbar.
