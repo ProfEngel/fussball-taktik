@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>TSV Plattenhardt – Taktiktafel PWA</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0a1710">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TSV Taktik">
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%23e52421'/><circle cx='256' cy='256' r='180' fill='%23ffffff'/><circle cx='256' cy='256' r='140' fill='%230a1710'/><text x='50%25' y='56%25' font-size='130' font-weight='bold' fill='%23ffffff' text-anchor='middle' font-family='Arial,sans-serif'>6</text></svg>">
+
+<style>
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --header-h: 46px;
+  --tsv-red: #e52421;
+  --bg-dark: #0a1118;
+  --panel-bg: #131c26;
+  --card-bg: #1a2533;
+  --border: #273547;
+  --accent-cyan: #38bdf8;
+  --accent-gold: #facc15;
+  --accent-green: #22c55e;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-dark);
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+}
+
+/* ════════════ HEADER ════════════ */
+header {
+  height: var(--header-h);
+  background: linear-gradient(90deg, #131d27 0%, #0d141d 100%);
+  border-bottom: 2px solid var(--tsv-red);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  z-index: 30;
+  flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 9px; }
+.crest {
+  width: 30px; height: 30px; background: var(--tsv-red);
+  border: 1.5px solid #fff; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 10px; color: #fff;
+  box-shadow: 0 2px 6px rgba(229,36,33,0.5);
+}
+.title-group h1 { font-size: 13px; font-weight: 800; letter-spacing: 0.3px; line-height: 1.1; }
+.title-group span { font-size: 10px; color: #94a3b8; }
+
+.header-center { display: flex; align-items: center; gap: 6px; }
+.nav-tab-btn {
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 14px;
+  border: 1px solid #2d3e52;
+  background: #182330;
+  color: #cbd5e1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+}
+.nav-tab-btn.active {
+  background: var(--tsv-red);
+  border-color: #ff5451;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(229,36,33,0.4);
+}
+
+.header-right { display: flex; align-items: center; gap: 7px; }
+.icon-btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: #1e2c3d;
+  border: 1px solid #364960;
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.icon-btn:active { transform: scale(0.96); }
+.help-circle-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #1d3557; border: 1.5px solid #38bdf8;
+  color: #38bdf8; font-weight: 900; font-size: 14px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+/* ════════════ MAIN CONTENT ════════════ */
+#main-content {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  height: calc(100dvh - var(--header-h) - var(--sat) - var(--sab));
+}
+
+/* PITCH WRAPPER */
+#pitch-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #08110a;
+  padding: 6px;
+  overflow: hidden;
+}
+
+#pitch-svg {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  touch-action: none;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.7));
+}
+
+/* ════════════ SIDEBAR ════════════ */
+#sidebar {
+  width: 330px;
+  background: var(--panel-bg);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  z-index: 20;
+  padding: 8px 10px 40px 10px;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+/* Custom scrollbar for sidebar */
+#sidebar::-webkit-scrollbar { width: 5px; }
+#sidebar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+#sidebar::-webkit-scrollbar-thumb { background: #2d3e52; border-radius: 4px; }
+
+@media (orientation: portrait) {
+  #main-content { flex-direction: column; }
+  #sidebar {
+    width: 100%;
+    height: 300px;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-bottom: max(35px, var(--sab));
+  }
+}
+
+/* CARDS & CONTROLS */
+.card {
+  background: var(--card-bg);
+  border-radius: 9px;
+  padding: 8px;
+  border: 1px solid var(--border);
+}
+.card-title {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-title .badge-pill {
+  font-size: 9px;
+  background: #233448;
+  color: #38bdf8;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.btn-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+
+.btn {
+  padding: 7px 7px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid #334458;
+  background: #202c3b;
+  color: #f1f5f9;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  line-height: 1.25;
+  transition: all 0.1s;
+}
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: var(--tsv-red); border-color: #ff4744; color: #fff; }
+.btn.green { background: #166534; border-color: #22c55e; color: #fff; }
+.btn.blue { background: #1e40af; border-color: #3b82f6; color: #fff; }
+.btn.amber { background: #854d0e; border-color: #f59e0b; color: #fff; }
+.btn.purple { background: #6b21a8; border-color: #a855f7; color: #fff; }
+.btn.teal { background: #0f766e; border-color: #2dd4bf; color: #fff; }
+.btn.span2 { grid-column: span 2; }
+.btn.span3 { grid-column: span 3; }
+.btn.active-toggle {
+  background: #2563eb !important;
+  border-color: #60a5fa !important;
+  color: #fff !important;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+}
+
+.sub-desc {
+  font-size: 9px;
+  font-weight: normal;
+  display: block;
+  opacity: 0.85;
+}
+
+/* ════════════ STATUS BANNER ════════════ */
+#status-banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 22, 33, 0.94);
+  border: 1.5px solid #38bdf8;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #f8fafc;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  z-index: 25;
+  text-align: center;
+  max-width: 82%;
+  transition: all 0.2s;
+}
+#status-banner.warning { border-color: #ef4444; color: #fca5a5; background: rgba(30,10,12,0.94); }
+#status-banner.success { border-color: #22c55e; color: #86efac; background: rgba(10,28,16,0.94); }
+
+/* FLOATING INFO BADGE ON PITCH */
+.pitch-badge {
+  pointer-events: none;
+  font-family: inherit;
+}
+
+/* ════════════ HELP MODAL ════════════ */
+#help-modal {
+  display: none;
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(4,8,14,0.88); backdrop-filter: blur(10px);
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+#help-modal.open { display: flex; }
+.help-box {
+  background: #141f2c; border: 1.5px solid #38bdf8; border-radius: 16px;
+  width: min(94vw, 760px); max-height: 90vh; overflow-y: auto;
+  padding: 22px; position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+.help-box h2 { font-size: 17px; font-weight: 900; color: #38bdf8; margin-bottom: 14px; }
+.help-section { margin-bottom: 16px; }
+.help-section h3 { font-size: 12px; font-weight: 800; color: #facc15; margin-bottom: 6px; border-left: 3px solid #facc15; padding-left: 7px; }
+.help-section p, .help-section li { font-size: 11px; line-height: 1.6; color: #cbd5e1; }
+.help-section ul { padding-left: 15px; }
+.rule-box { background: #1b2838; border-radius: 8px; padding: 9px 12px; margin-top: 6px; border: 1px solid #283a4e; }
+.help-close {
+  position: absolute; top: 12px; right: 14px;
+  background: var(--tsv-red); border: none; color: #fff;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-size: 16px; cursor: pointer; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.help-tag { display: inline-block; background: #1e3a5f; color: #93c5fd; border-radius: 5px; padding: 1px 7px; font-size: 9px; font-weight: 700; margin: 1px; }
+.help-tag.red { background: #4a1010; color: #fca5a5; }
+.help-tag.green { background: #0d3320; color: #86efac; }
+.help-tag.amber { background: #3d2400; color: #fcd34d; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ════════════ HEADER ════════════ -->
+  <header>
+    <div class="header-left">
+      <div class="crest">TSV</div>
+      <div class="title-group">
+        <h1>TSV Plattenhardt</h1>
+        <span>Taktikboard • PWA</span>
+      </div>
+    </div>
+
+    <!-- MAIN MODE TABS -->
+    <div class="header-center">
+      <button id="tab-tactic" class="nav-tab-btn active" onclick="switchMainTab('tactic')">📋 Taktik & Presets</button>
+      <button id="tab-sim"    class="nav-tab-btn" onclick="switchMainTab('sim')">⚡ Simulation & Analyse</button>
+      <button id="tab-free"   class="nav-tab-btn" onclick="switchMainTab('free')">🎮 Freispiel</button>
+      <button id="tab-draw"   class="nav-tab-btn" onclick="switchMainTab('draw')">🎨 Zeichnen</button>
+    </div>
+
+    <div class="header-right">
+      <button class="icon-btn" onclick="runLiveTacticAnalysis()" title="Aktuelle Tafelstellung auswerten">🔍 Analyse</button>
+      <button class="help-circle-btn" onclick="openHelp()" title="Hilfe & Erklärungen">?</button>
+    </div>
+  </header>
+
+  <!-- ════════════ MAIN VIEW ════════════ -->
+  <div id="main-content">
+    <div id="status-banner">Spielerin oder Ball ziehen – oder Taktik-Szenario wählen!</div>
+
+    <!-- PITCH CONTAINER -->
+    <div id="pitch-container">
+      <svg id="pitch-svg" viewBox="0 0 1000 660">
+        <defs>
+          <linearGradient id="grass" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#144d28"/>
+            <stop offset="100%" stop-color="#0f3b1e"/>
+          </linearGradient>
+
+          <!-- Marker Definitions -->
+          <marker id="arr-yellow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="#facc15"/>
+          </marker>
+          <marker id="arr-white" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="#ffffff"/>
+          </marker>
+          <marker id="arr-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="#22c55e"/>
+          </marker>
+          <marker id="arr-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="#ef4444"/>
+          </marker>
+          <marker id="arr-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8"/>
+          </marker>
+
+          <!-- Glow -->
+          <filter id="glow-gold" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+        </defs>
+
+        <!-- Rasen -->
+        <rect width="1000" height="660" rx="14" fill="url(#grass)"/>
+
+        <!-- 5-Korridore (DFB / Best Practice Zonen, toggleable) -->
+        <g id="layer-corridors" display="none" opacity="0.18">
+          <!-- Flügel links (oben) y: 30 bis 160 -->
+          <rect x="50" y="30" width="900" height="130" fill="#38bdf8"/>
+          <!-- Halbraum links y: 160 bis 270 -->
+          <rect x="50" y="160" width="900" height="110" fill="#facc15"/>
+          <!-- Zentrum y: 270 bis 390 -->
+          <rect x="50" y="270" width="900" height="120" fill="#22c55e"/>
+          <!-- Halbraum rechts y: 390 bis 500 -->
+          <rect x="50" y="390" width="900" height="110" fill="#facc15"/>
+          <!-- Flügel rechts y: 500 bis 630 -->
+          <rect x="50" y="500" width="900" height="130" fill="#38bdf8"/>
+          <!-- Zonentexte -->
+          <text x="60" y="100" fill="#38bdf8" font-size="12" font-weight="800">Flügel Links</text>
+          <text x="60" y="220" fill="#facc15" font-size="12" font-weight="800">Halbraum Links</text>
+          <text x="60" y="335" fill="#22c55e" font-size="12" font-weight="800">Zentrum</text>
+          <text x="60" y="450" fill="#facc15" font-size="12" font-weight="800">Halbraum Rechts</text>
+          <text x="60" y="570" fill="#38bdf8" font-size="12" font-weight="800">Flügel Rechts</text>
+        </g>
+
+        <!-- Rasenstreifen klassisch -->
+        <g opacity="0.08">
+          <rect x="50"  y="30" width="100" height="600" fill="#fff"/>
+          <rect x="250" y="30" width="100" height="600" fill="#fff"/>
+          <rect x="450" y="30" width="100" height="600" fill="#fff"/>
+          <rect x="650" y="30" width="100" height="600" fill="#fff"/>
+          <rect x="850" y="30" width="100" height="600" fill="#fff"/>
+        </g>
+
+        <!-- Spielfeldmarkierungen -->
+        <rect x="50" y="30" width="900" height="600" fill="none" stroke="#fff" stroke-width="3" opacity="0.85"/>
+        <line x1="500" y1="30" x2="500" y2="630" stroke="#fff" stroke-width="3" opacity="0.85"/>
+        <circle cx="500" cy="330" r="75" fill="none" stroke="#fff" stroke-width="3" opacity="0.85"/>
+        <circle cx="500" cy="330" r="4" fill="#fff"/>
+
+        <!-- 9er Feld D-Jugend Linien gestrichelt -->
+        <g opacity="0.32" stroke="#facc15" stroke-dasharray="8 6" stroke-width="2">
+          <line x1="160" y1="30" x2="160" y2="630"/>
+          <line x1="840" y1="30" x2="840" y2="630"/>
+        </g>
+
+        <!-- Strafräume Links (TSV) & Rechts (Gegner) -->
+        <rect x="50"  y="160" width="140" height="340" fill="none" stroke="#fff" stroke-width="3" opacity="0.85"/>
+        <rect x="50"  y="240" width="50"  height="180" fill="none" stroke="#fff" stroke-width="2" opacity="0.8"/>
+        <circle cx="150" cy="330" r="3" fill="#fff"/>
+        <rect x="810" y="160" width="140" height="340" fill="none" stroke="#fff" stroke-width="3" opacity="0.85"/>
+        <rect x="900" y="240" width="50"  height="180" fill="none" stroke="#fff" stroke-width="2" opacity="0.8"/>
+        <circle cx="850" cy="330" r="3" fill="#fff"/>
+
+        <!-- DYNAMISCHE TACTICAL LAYERS -->
+        <g id="layer-cones"></g>        <!-- Passschatten & Deckungskegel -->
+        <g id="layer-zones"></g>        <!-- Wirkungskreise -->
+        <g id="layer-gaps"></g>         <!-- Lücken & Schnittstellen in der Kette -->
+        <g id="layer-offside"></g>      <!-- Abseits-Linie & Zone -->
+        <g id="layer-drawings"></g>     <!-- Telestration / Freihand-Zeichnungen -->
+        <g id="layer-tactics"></g>      <!-- Passpfeile & Taktikmarkierungen -->
+        <g id="layer-players"></g>      <!-- Spielerinnen & Ball -->
+        <g id="layer-bubbles"></g>      <!-- Sprechblasen -->
+      </svg>
+    </div>
+
+    <!-- ════════════ SIDEBAR ════════════ -->
+    <aside id="sidebar">
+
+      <!-- ── TAB 1: TAKTIK & PRESETS ── -->
+      <div id="panel-tactic" class="tab-panel">
+        <div class="card">
+          <div class="card-title">
+            <span>📌 Taktische Ausgangslagen</span>
+            <span class="badge-pill">1-Click</span>
+          </div>
+          <div class="btn-grid">
+            <button class="btn primary span2" onclick="applyPreset('base')">
+              🏟️ 1. Grundordnung 3-1-3-1
+              <span class="sub-desc">Kompakte Ausgangsstellung</span>
+            </button>
+            <button class="btn green" onclick="applyPreset('wide')">
+              🟢 Ballbesitz: Weit
+              <span class="sub-desc">Auffächern & Anbieten</span>
+            </button>
+            <button class="btn amber" onclick="applyPreset('compact')">
+              🔴 Ballverlust: Eng
+              <span class="sub-desc">Zentrum dicht machen</span>
+            </button>
+            <button class="btn purple span2" onclick="applyPreset('deepDefense')">
+              🛡️ Gegner im Strafraum (Tief stehend)
+              <span class="sub-desc">Kompakte Box, Doppelung auf Außen</span>
+            </button>
+            <button class="btn teal" onclick="applyPreset('throwinGood')">
+              📐 Einwurf TSV: Richtig
+              <span class="sub-desc">Vor die Gegnerin lösen!</span>
+            </button>
+            <button class="btn" style="border-color:#ef4444;" onclick="applyPreset('throwinBad')">
+              ⚠️ Einwurf: Falsch
+              <span class="sub-desc">Im Passschatten versteckt</span>
+            </button>
+            <button class="btn span2" onclick="applyPreset('shift')">
+              ↔️ Spielverlagerung über die 6
+              <span class="sub-desc">Seite dicht? Rückpass & Verlagerung</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>🗣️ Die 2 goldenen Regeln & Zurufe</span>
+          </div>
+          <div class="btn-grid">
+            <button class="btn blue" onclick="simSpeech('ruecken')">👀 "Gegner im Rücken!"</button>
+            <button class="btn blue" onclick="simSpeech('zeit')">⏱️ "Du hast Zeit!"</button>
+            <button class="btn amber" onclick="simSpeech('leo')">📢 "Leo! / Meiner!"</button>
+            <button class="btn amber" onclick="simSpeech('schulter')">🔄 "Schulterblick!"</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>📐 Aufstellungen</span>
+          </div>
+          <div class="btn-grid">
+            <button class="btn" onclick="setFormation('3131')">9er: 3-1-3-1</button>
+            <button class="btn" onclick="setFormation('332')">9er: 3-3-2</button>
+            <button class="btn" onclick="setFormation('433')">11er: 4-3-3</button>
+            <button class="btn" onclick="setFormation('4231')">11er: 4-2-3-1</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 2: SIMULATION & ANALYSE ── -->
+      <div id="panel-sim" class="tab-panel" style="display:none;">
+        <div class="card">
+          <div class="card-title">
+            <span>⚡ Live-Simulation ab aktuellem Stand</span>
+            <span class="badge-pill">Interaktiv</span>
+          </div>
+          <p style="font-size:10px; color:#94a3b8; margin-bottom:7px;">
+            Verschiebe Spielerinnen frei per Hand. Klicke dann hier, um die Konsequenzen direkt auf dem Feld abzuspielen!
+          </p>
+          <div class="btn-grid">
+            <button class="btn primary span2" onclick="simulateOpponentAttackFromCurrent()">
+              🚨 ▶️ Gegner-Angriff ab aktuellem Stand simulieren
+              <span class="sub-desc">Gegner sucht & bestraft offene Lücken / Fehlstellungen!</span>
+            </button>
+            <button class="btn green span2" onclick="simulateFind6FromCurrent()">
+              ⬡ ▶️ Spielaufbau über die 6 (ab aktueller Position)
+              <span class="sub-desc">Findet den besten Weg zur 6 & verlagert</span>
+            </button>
+            <button class="btn teal span2" onclick="simulateThrowinExecution()">
+              ⚽ ▶️ Einwurf ausführen (Klappt oder abgefangen?)
+              <span class="sub-desc">Prüft Deckungskegel der Empfängerin</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>⚠️ Typische Taktikfehler demonstrieren</span>
+          </div>
+          <div class="btn-grid">
+            <button class="btn amber span2" onclick="demoErrorLV()">
+              ⚠️ Fehler: LV rennt blind vor
+              <span class="sub-desc">Riesiges Loch hinten links → Gegner kontert!</span>
+            </button>
+            <button class="btn amber span2" onclick="demoErrorCenterOpen()">
+              ⚠️ Fehler: 6er & IV schlafen
+              <span class="sub-desc">Zentrum offen → Gegner geht alleine durch!</span>
+            </button>
+            <button class="btn blue span2" onclick="simPressing()">
+              ⬆️ Hohes Angriffspressing vorführen
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 3: FREISPIEL & PASSEN ── -->
+      <div id="panel-free" class="tab-panel" style="display:none;">
+        <div class="card">
+          <div class="card-title">
+            <span>🎮 Freispiel-Modus</span>
+            <span class="badge-pill">Live-Passprüfung</span>
+          </div>
+          <p style="font-size:10px; color:#cbd5e1; margin-bottom:8px; line-height:1.4;">
+            1. Tippe auf eine eigene Spielerin (Rot), die den Ball hat.<br>
+            2. Tippe auf dein Passziel (Mitspielerin oder freier Raum).<br>
+            3. Die App prüft automatisch: <strong>Abseits</strong> und <strong>Deckungsschatten</strong>!
+          </p>
+          <div class="btn-grid">
+            <button class="btn green span2" id="btn-toggle-freeplay" onclick="toggleFreePlay()">
+              ▶️ Freispiel-Modus Aktivieren
+            </button>
+            <button class="btn span2" onclick="resetBallTo6()">
+              ⚽ Ball zur 6 legen
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 4: ZEICHNEN & ZONEN ── -->
+      <div id="panel-draw" class="tab-panel" style="display:none;">
+        <div class="card">
+          <div class="card-title">
+            <span>🎨 Zeichen-Werkzeuge (Taktiktafel)</span>
+          </div>
+          <div class="btn-grid-3" style="margin-bottom:6px;">
+            <button class="btn active-toggle" id="btn-tool-pen" onclick="setDrawTool('pen')">✏️ Freihand</button>
+            <button class="btn" id="btn-tool-pass" onclick="setDrawTool('pass')">⇢ Pass (Pfeil)</button>
+            <button class="btn" id="btn-tool-run" onclick="setDrawTool('run')">➜ Laufweg</button>
+          </div>
+          <div class="btn-grid-3" style="margin-bottom:8px;">
+            <button class="btn" onclick="setDrawColor('#facc15')">🟡 Gelb</button>
+            <button class="btn" onclick="setDrawColor('#ffffff')">⚪ Weiß</button>
+            <button class="btn" onclick="setDrawColor('#ef4444')">🔴 Rot</button>
+          </div>
+          <div class="btn-grid">
+            <button class="btn" onclick="undoLastDrawing()">↩️ Rückgängig</button>
+            <button class="btn primary" onclick="clearDrawings()">🧹 Alles löschen</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>🏟️ Spielfeld-Zonen</span>
+          </div>
+          <div class="btn-grid">
+            <button class="btn" id="btn-toggle-corridors" onclick="toggleCorridors()">
+              📊 5 Korridore (Halbräume)
+            </button>
+            <button class="btn" onclick="highlightGoalBox()">
+              🎯 Gefahrenzone (16er)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PERMANENT TOGGLES (Wirkungskreise, Abseits, Kegel) ── -->
+      <div class="card">
+        <div class="card-title">
+          <span>👁️ Taktische Einblendungen</span>
+        </div>
+        <div class="btn-grid">
+          <button class="btn" id="btn-zones" onclick="toggleZones()">◉ Wirkungskreise</button>
+          <button class="btn" id="btn-offside" onclick="toggleOffside()">🔵 Abseits-Linie</button>
+          <button class="btn" id="btn-cones" onclick="toggleCones()">🔺 Passschatten / Kegel</button>
+          <button class="btn" id="btn-gaps" onclick="toggleGaps()">⚠️ Ketten-Lücken</button>
+        </div>
+      </div>
+
+      <!-- ── RESET & TOOLS ── -->
+      <div class="card">
+        <div class="card-title">
+          <span>⚙️ Spielfeld-Tools</span>
+        </div>
+        <div class="btn-grid">
+          <button class="btn" onclick="resetToInitial()">🔄 Grundposition</button>
+          <button class="btn primary" onclick="clearAllPitch()">🧹 Tafel leeren</button>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+</div>
+
+<!-- ════════════ HELP MODAL ════════════ -->
+<div id="help-modal">
+  <div class="help-box">
+    <button class="help-close" onclick="closeHelp()">✕</button>
+    <h2>📖 TSV Plattenhardt – Taktikboard Handbuch</h2>
+
+    <div class="help-section">
+      <h3>🎮 Spielerinnen von Hand bewegen & Simulation</h3>
+      <div class="rule-box">
+        <p>Jede Spielerin und der Ball können <strong>jederzeit frei mit dem Finger/Maus gezogen werden</strong>. Um den Spielerinnen die Konsequenzen einer Fehlstellung vorzuführen:</p>
+        <ul style="margin-top:6px;">
+          <li>Ziehe z. B. die Linksverteidigerin (LV Nr. 2) weit nach vorne oder zur Seite.</li>
+          <li>Klicke auf <strong>"🚨 Gegner-Angriff ab aktuellem Stand simulieren"</strong>.</li>
+          <li>Die Simulation erkennt <em>die echte Lücke auf der Tafel</em>, schlägt den Ball in den freien Raum und zeigt, wie der Gegner zum Abschluss kommt!</li>
+          <li>Über <strong>"🔍 Analyse"</strong> oben rechts werden alle Lücken und ungedeckten Zonen markiert.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>🔺 Passschatten (Deckungskegel) & Einwurf</h3>
+      <div class="rule-box">
+        <p>In modernen Taktikboards (Guardiola, Spielverlagerung.de) wirft jeder Verteidiger einen <strong>Passschatten weg vom Ball</strong>:</p>
+        <ul style="margin-top:6px;">
+          <li>Steht eine Spielerin <strong>hinter</strong> dem Gegner, liegt sie im Schatten → Ein Pass kommt fast nie an!</li>
+          <li><strong>Beim Einwurf:</strong> Wenn sich die Einwurf-Partnerin hinter die gegnerische Außenverteidigerin stellt, fängt der Gegner den Ball sofort ab.</li>
+          <li><strong>Lösung:</strong> <em>Vor</em> die Gegnerin lösen oder in die Schnittstelle sprinten! (Preset "Einwurf: Richtig").</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>🔵 Automatische Abseits-Linie</h3>
+      <div class="rule-box">
+        <p>Die blaue Linie berechnet in Echtzeit den <strong>vorletzten verteidigenden Spieler</strong> (inkl. Torwart). Pässe hinter diese Linie in die gegnerische Hälfte werden im Freispiel-Modus automatisch blockiert und rot gekennzeichnet.</p>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>⬡ Philosophie: Immer die 6 suchen!</h3>
+      <div class="rule-box">
+        <p>Die Nummer 6 (ZDM) ist unsere <strong>Schaltzentrale</strong>:</p>
+        <ul style="margin-top:6px;">
+          <li>Sie bietet sich immer im offenen Dreieck an.</li>
+          <li>Nimmt mit dem ersten Kontakt mit Schulterblick auf.</li>
+          <li>Verlagert das Spiel auf die schwach besetzte Gegenseite!</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <h3>📱 Als Offline-App auf iPad / iPhone / Android</h3>
+      <div class="rule-box">
+        <ul>
+          <li><strong>iPhone / iPad (Safari):</strong> Teilen-Button (Viereck mit Pfeil ↑) → <em>"Zum Home-Bildschirm"</em> → Hinzufügen.</li>
+          <li><strong>Android (Chrome):</strong> Menü ⋮ → <em>"App installieren"</em> oder Banner antippen.</li>
+          <li><strong>Vollständig offline:</strong> Die App speichert alle Daten im lokalen Speicher. Auf dem Sportplatz wird kein WLAN oder Mobilfunk benötigt!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SCRIPT ════════════ -->
+<script>
+// ═══ PWA Service Worker Registration ═══
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW err:', err));
+  });
+}
+
+// ═══ SVG Layers & Elements ═══
+const svg            = document.getElementById('pitch-svg');
+const layerPlayers   = document.getElementById('layer-players');
+const layerZones     = document.getElementById('layer-zones');
+const layerTactics   = document.getElementById('layer-tactics');
+const layerBubbles   = document.getElementById('layer-bubbles');
+const layerOffside   = document.getElementById('layer-offside');
+const layerCones     = document.getElementById('layer-cones');
+const layerGaps      = document.getElementById('layer-gaps');
+const layerDrawings  = document.getElementById('layer-drawings');
+const layerCorridors = document.getElementById('layer-corridors');
+const banner         = document.getElementById('status-banner');
+
+// ═══ State ═══
+let showZones     = false;
+let showOffside   = true;   // on by default for great tactical clarity
+let showCones     = true;   // on by default
+let showGaps      = true;   // on by default: highlights open channels
+let showCorridors = false;
+
+let activeTab     = 'tactic';
+let freePlayMode  = false;
+let fpSelected    = null;
+
+// Drawing tool state
+let currentDrawTool  = 'pen'; // 'pen', 'pass', 'run'
+let currentDrawColor = '#facc15';
+let isDrawing        = false;
+let drawStartPoint   = null;
+let currentPathEl    = null;
+let drawingHistory   = [];
+
+// ═══ Player Database ═══
+const initialPlayers = [
+  // TSV Plattenhardt (Rot) – 3-1-3-1
+  { id:'tsv-1',  team:'tsv', num:'1',  role:'TW',  x:80,  y:330, is6:false },
+  { id:'tsv-2',  team:'tsv', num:'2',  role:'LV',  x:220, y:150, is6:false },
+  { id:'tsv-4',  team:'tsv', num:'4',  role:'IV',  x:190, y:330, is6:false },
+  { id:'tsv-3',  team:'tsv', num:'3',  role:'RV',  x:220, y:510, is6:false },
+  { id:'tsv-6',  team:'tsv', num:'6',  role:'ZDM', x:340, y:330, is6:true  },
+  { id:'tsv-7',  team:'tsv', num:'7',  role:'LM',  x:440, y:160, is6:false },
+  { id:'tsv-10', team:'tsv', num:'10', role:'ZOM', x:450, y:330, is6:false },
+  { id:'tsv-11', team:'tsv', num:'11', role:'RM',  x:440, y:500, is6:false },
+  { id:'tsv-9',  team:'tsv', num:'9',  role:'ST',  x:520, y:330, is6:false },
+  // Gegner (Dunkelgrau)
+  { id:'geg-1',  team:'geg', num:'1',  role:'TW',  x:920, y:330, is6:false },
+  { id:'geg-2',  team:'geg', num:'2',  role:'RV',  x:760, y:160, is6:false },
+  { id:'geg-4',  team:'geg', num:'4',  role:'IV',  x:790, y:330, is6:false },
+  { id:'geg-3',  team:'geg', num:'3',  role:'LV',  x:760, y:500, is6:false },
+  { id:'geg-6',  team:'geg', num:'6',  role:'DM',  x:670, y:330, is6:false },
+  { id:'geg-7',  team:'geg', num:'7',  role:'RM',  x:600, y:180, is6:false },
+  { id:'geg-10', team:'geg', num:'10', role:'ZM',  x:620, y:330, is6:false },
+  { id:'geg-11', team:'geg', num:'11', role:'LM',  x:600, y:480, is6:false },
+  { id:'geg-9',  team:'geg', num:'9',  role:'ST',  x:540, y:330, is6:false },
+  // Ball
+  { id:'ball',   team:'ball', num:'⚽', role:'', x:360, y:330, is6:false }
+];
+
+let players = JSON.parse(JSON.stringify(initialPlayers));
+
+// ──────────────────────────────────────────────────────────
+// TABS SWITCHER
+// ──────────────────────────────────────────────────────────
+function switchMainTab(tab) {
+  activeTab = tab;
+  ['tactic','sim','free','draw'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`panel-${t}`).style.display = (t === tab) ? 'block' : 'none';
+  });
+
+  if (tab === 'free') {
+    enableFreePlay(true);
+  } else {
+    enableFreePlay(false);
+  }
+
+  if (tab === 'draw') {
+    setStatus('🎨 Zeichentool aktiv: Ziehe Linien oder Pfeile auf dem Spielfeld!');
+  } else {
+    setStatus(`Modus: ${tab === 'tactic' ? 'Taktik-Szenarien' : tab === 'sim' ? 'Simulation & Analyse' : 'Taktiktafel'}`);
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// DYNAMIC ANALYSIS & OFF-SIDE
+// ──────────────────────────────────────────────────────────
+function getOffsideX() {
+  const defenders = players
+    .filter(p => p.team === 'geg')
+    .map(p => p.x)
+    .sort((a, b) => a - b);
+  if (defenders.length >= 2) return defenders[1];
+  if (defenders.length === 1) return defenders[0];
+  return 500;
+}
+
+function isOffside(p) {
+  if (p.team !== 'tsv' || p.id === 'tsv-1') return false;
+  const ox = getOffsideX();
+  return p.x > 500 && p.x > ox;
+}
+
+// Check if TSV player is in a cover shadow cast from the ball through any opponent
+function isInCoverShadow(p) {
+  if (p.team !== 'tsv') return false;
+  const ball = players.find(x => x.id === 'ball') || { x: 300, y: 330 };
+  
+  return players.some(opp => {
+    if (opp.team !== 'geg') return false;
+    // Vector from ball to opponent
+    const vBx = opp.x - ball.x;
+    const vBy = opp.y - ball.y;
+    const distBallOpp = Math.hypot(vBx, vBy);
+    if (distBallOpp < 15) return false;
+
+    // Vector from ball to player
+    const vPx = p.x - ball.x;
+    const vPy = p.y - ball.y;
+    const distBallP = Math.hypot(vPx, vPy);
+
+    // Player must be behind opponent relative to the ball
+    if (distBallP <= distBallOpp) return false;
+
+    // Angle difference
+    const angleOpp = Math.atan2(vBy, vBx);
+    const angleP   = Math.atan2(vPy, vPx);
+    let diff = Math.abs(angleOpp - angleP);
+    if (diff > Math.PI) diff = 2 * Math.PI - diff;
+
+    // Width of cover shadow narrows with distance or angular cone ~ 22 deg
+    const maxAngle = 0.38; // ~22 degrees
+    const maxDist = 260;   // shadow length
+    return diff < maxAngle && (distBallP - distBallOpp) < maxDist;
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// GAP DETECTION IN DEFENSIVE LINE
+// ──────────────────────────────────────────────────────────
+function detectDefensiveGaps() {
+  const tsvDef = [
+    players.find(p => p.id === 'tsv-2'), // LV
+    players.find(p => p.id === 'tsv-4'), // IV
+    players.find(p => p.id === 'tsv-3')  // RV
+  ].filter(Boolean);
+
+  const gaps = [];
+  if (tsvDef.length >= 2) {
+    // Gap between LV and IV
+    const d1 = Math.hypot(tsvDef[0].x - tsvDef[1].x, tsvDef[0].y - tsvDef[1].y);
+    if (d1 > 170) {
+      gaps.push({ p1: tsvDef[0], p2: tsvDef[1], dist: d1, side: 'Links (LV - IV)' });
+    }
+    // Gap between IV and RV
+    const d2 = Math.hypot(tsvDef[1].x - tsvDef[2].x, tsvDef[1].y - tsvDef[2].y);
+    if (d2 > 170) {
+      gaps.push({ p1: tsvDef[1], p2: tsvDef[2], dist: d2, side: 'Rechts (IV - RV)' });
+    }
+  }
+  return gaps;
+}
+
+// ──────────────────────────────────────────────────────────
+// RENDERING
+// ──────────────────────────────────────────────────────────
+function renderPlayers() {
+  layerPlayers.innerHTML = '';
+  layerZones.innerHTML   = '';
+  layerOffside.innerHTML = '';
+  layerCones.innerHTML   = '';
+  layerGaps.innerHTML    = '';
+
+  const ball = players.find(p => p.id === 'ball') || { x: 300, y: 330 };
+
+  // 1. Offside Line
+  if (showOffside) {
+    const ox = getOffsideX();
+    const line = mkEl('line');
+    setAttrs(line, { x1: ox, y1: 30, x2: ox, y2: 630,
+      stroke: '#38bdf8', 'stroke-width': 2.5,
+      'stroke-dasharray': '10 6', opacity: 0.85 });
+    layerOffside.appendChild(line);
+
+    const lbl = mkEl('text');
+    setAttrs(lbl, { x: ox + 6, y: 48, 'font-size': 11, 'font-weight': 900, fill: '#38bdf8', opacity: 0.9 });
+    lbl.textContent = 'ABSEITS-LINIE';
+    layerOffside.appendChild(lbl);
+
+    const shade = mkEl('rect');
+    setAttrs(shade, { x: ox, y: 30, width: Math.max(0, 950 - ox), height: 600,
+      fill: 'rgba(56,189,248,0.06)', 'pointer-events': 'none' });
+    layerOffside.appendChild(shade);
+  }
+
+  // 2. Passschatten / Deckungskegel (relative to Ball!)
+  if (showCones) {
+    players.filter(p => p.team === 'geg' && p.role !== 'TW').forEach(opp => {
+      // Vector from ball to opponent
+      const dx = opp.x - ball.x;
+      const dy = opp.y - ball.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const dirX = dx / dist;
+      const dirY = dy / dist;
+
+      // Project shadow behind opponent away from ball
+      const shadowLength = 220;
+      const perpX = -dirY;
+      const perpY = dirX;
+      const halfWidth = 36; // cone spread
+
+      const pLeftX  = opp.x + dirX * shadowLength + perpX * halfWidth;
+      const pLeftY  = opp.y + dirY * shadowLength + perpY * halfWidth;
+      const pRightX = opp.x + dirX * shadowLength - perpX * halfWidth;
+      const pRightY = opp.y + dirY * shadowLength - perpY * halfWidth;
+
+      const cone = mkEl('polygon');
+      setAttrs(cone, {
+        points: `${opp.x},${opp.y} ${pLeftX},${pLeftY} ${pRightX},${pRightY}`,
+        fill: 'rgba(239, 68, 68, 0.22)',
+        stroke: '#ef4444',
+        'stroke-width': 1,
+        opacity: 0.85,
+        'pointer-events': 'none'
+      });
+      layerCones.appendChild(cone);
+
+      // Small tackling radius around opponent
+      const circ = mkEl('circle');
+      setAttrs(circ, { cx: opp.x, cy: opp.y, r: 42,
+        fill: 'none', stroke: '#ef4444', 'stroke-width': 1,
+        'stroke-dasharray': '4 4', opacity: 0.35, 'pointer-events': 'none' });
+      layerCones.appendChild(circ);
+    });
+  }
+
+  // 3. Defensive Gaps Detection (Lücken in der Kette)
+  if (showGaps) {
+    const gaps = detectDefensiveGaps();
+    gaps.forEach(g => {
+      const line = mkEl('line');
+      setAttrs(line, {
+        x1: g.p1.x, y1: g.p1.y, x2: g.p2.x, y2: g.p2.y,
+        stroke: '#ef4444', 'stroke-width': 3,
+        'stroke-dasharray': '8 5'
+      });
+      layerGaps.appendChild(line);
+
+      // Warning badge
+      const midX = (g.p1.x + g.p2.x) / 2;
+      const midY = (g.p1.y + g.p2.y) / 2;
+      const gBadge = mkEl('g');
+      gBadge.setAttribute('transform', `translate(${midX}, ${midY})`);
+      gBadge.innerHTML = `
+        <rect x="-42" y="-12" width="84" height="24" rx="6" fill="#991b1b" stroke="#f87171" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-size="9" font-weight="900" fill="#fff">⚠️ LÜCKE: ${Math.round(g.dist/10)}m</text>
+      `;
+      layerGaps.appendChild(gBadge);
+    });
+  }
+
+  // 4. Players & Ball
+  players.forEach(p => {
+    if (p.team === 'ball') {
+      const g = mkEl('g');
+      g.setAttribute('transform', `translate(${p.x},${p.y})`);
+      g.id = p.id;
+      g.innerHTML = `
+        <circle r="14" fill="#fff" stroke="#111" stroke-width="2.5" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.6))"/>
+        <circle r="5" fill="#111"/>
+      `;
+      enableDrag(g, p);
+      layerPlayers.appendChild(g);
+      return;
+    }
+
+    // Wirkungskreise
+    if (showZones) {
+      const z = mkEl('circle');
+      setAttrs(z, {
+        cx: p.x, cy: p.y,
+        r: p.is6 ? 85 : 62,
+        fill: p.team === 'tsv' ? 'rgba(229,36,33,0.13)' : 'rgba(100,116,139,0.12)',
+        stroke: p.team === 'tsv' ? '#e52421' : '#64748b',
+        'stroke-dasharray': '4 4', 'stroke-width': 1.5
+      });
+      layerZones.appendChild(z);
+    }
+
+    const isTsv = p.team === 'tsv';
+    const mainColor = isTsv ? '#e52421' : '#334155';
+    const inShadow = isInCoverShadow(p);
+    const off = isOffside(p);
+
+    let extras = '';
+    if (p.is6) {
+      extras += `<circle r="27" fill="none" stroke="#facc15" stroke-width="3" opacity="0.95" filter="url(#glow-gold)"><animate attributeName="r" values="25;30;25" dur="2s" repeatCount="indefinite"/></circle>`;
+    }
+    if (off && showOffside) {
+      extras += `<circle r="25" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="5 3"/>`;
+    }
+    if (inShadow && showCones) {
+      extras += `<circle r="24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="3 3"/>`;
+    }
+    if (freePlayMode && fpSelected === p.id) {
+      extras += `<circle r="26" fill="none" stroke="#2dd4bf" stroke-width="3.5"/>`;
+    }
+
+    const g = mkEl('g');
+    g.setAttribute('transform', `translate(${p.x},${p.y})`);
+    g.id = p.id;
+    g.innerHTML = `
+      ${extras}
+      <circle r="20" fill="${mainColor}" stroke="#fff" stroke-width="2.5" filter="drop-shadow(0 3px 6px rgba(0,0,0,0.5))"/>
+      <text text-anchor="middle" y="6" font-size="14" font-weight="900" fill="#fff" pointer-events="none">${p.num}</text>
+      <rect x="-18" y="24" width="36" height="15" rx="4" fill="rgba(15,23,42,0.88)"/>
+      <text text-anchor="middle" y="35" font-size="9" font-weight="800" fill="#f8fafc" pointer-events="none">${p.role}</text>
+    `;
+
+    if (!freePlayMode && activeTab !== 'draw') {
+      enableDrag(g, p);
+    } else if (freePlayMode) {
+      g.style.cursor = 'pointer';
+      g.addEventListener('pointerdown', e => handleFreePlaySelect(e, p));
+    }
+
+    layerPlayers.appendChild(g);
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// DRAG & DROP FOR PLAYERS & BALL
+// ──────────────────────────────────────────────────────────
+function enableDrag(element, playerObj) {
+  let dragging = false;
+  element.addEventListener('pointerdown', e => {
+    if (activeTab === 'draw') return;
+    dragging = true;
+    element.setPointerCapture(e.pointerId);
+    e.stopPropagation();
+  });
+  element.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const pt = toSVGPoint(e.clientX, e.clientY);
+    playerObj.x = clamp(pt.x, 55, 945);
+    playerObj.y = clamp(pt.y, 35, 625);
+    renderPlayers();
+  });
+  element.addEventListener('pointerup', e => {
+    if (dragging) {
+      dragging = false;
+      try { element.releasePointerCapture(e.pointerId); } catch(_){}
+      renderPlayers();
+    }
+  });
+  element.addEventListener('pointercancel', () => { dragging = false; });
+}
+
+// ──────────────────────────────────────────────────────────
+// LIVE TACTICAL ANALYSIS (EVALUATION BUTTON)
+// ──────────────────────────────────────────────────────────
+function runLiveTacticAnalysis() {
+  clearDrawings();
+  const gaps = detectDefensiveGaps();
+  const p6 = players.find(p => p.id === 'tsv-6');
+  const lv = players.find(p => p.id === 'tsv-2');
+  const ball = players.find(p => p.id === 'ball');
+
+  const messages = [];
+
+  // 1. Check Gaps
+  if (gaps.length > 0) {
+    messages.push(`🚨 ${gaps.length} Lücke(n) in der Abwehrkette erkannt (${gaps.map(g=>g.side).join(', ')})!`);
+  }
+
+  // 2. Check Center Protection
+  if (p6 && (p6.y < 200 || p6.y > 460 || p6.x > 500)) {
+    messages.push(`⚠️ Die 6 (ZDM) hat ihre zentrale Schaltposition verlassen!`);
+  }
+
+  // 3. Check LV pushed too high
+  if (lv && lv.x > 450) {
+    messages.push(`⚠️ LV steht extrem hoch (x=${Math.round(lv.x)}) – Kontergefahr über links!`);
+    // Highlight danger area
+    const zone = mkEl('rect');
+    setAttrs(zone, { x: 120, y: 70, width: 220, height: 180,
+      fill: 'rgba(239, 68, 68, 0.25)', stroke: '#ef4444',
+      'stroke-dasharray': '6 6', 'stroke-width': 2 });
+    layerTactics.appendChild(zone);
+    const txt = mkEl('text');
+    setAttrs(txt, { x: 230, y: 165, 'text-anchor': 'middle', fill: '#fca5a5', 'font-weight': 900, 'font-size': 12 });
+    txt.textContent = 'UNGEDECKTER RÜCKRAUM!';
+    layerTactics.appendChild(txt);
+  }
+
+  // 4. Check Cover Shadow of TSV attackers
+  const shadowed = players.filter(p => p.team === 'tsv' && isInCoverShadow(p));
+  if (shadowed.length > 0) {
+    messages.push(`🔺 ${shadowed.length} Spielerin(nen) stehen im gegnerischen Passschatten (Nr. ${shadowed.map(s=>s.num).join(', ')})!`);
+  }
+
+  if (messages.length === 0) {
+    setStatus('✅ Hervorragend! Kompakte Staffelung, geschlossene Kette & anspielbare Passwege!', 'success');
+  } else {
+    setStatus(messages[0], 'warning');
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// TACTICAL PRESETS (1-CLICK CONFIGURATIONS)
+// ──────────────────────────────────────────────────────────
+function applyPreset(type) {
+  clearDrawings();
+  let targets = [];
+
+  if (type === 'base') {
+    resetToInitial();
+    setStatus('🏟️ Grundordnung 3-1-3-1 (TSV Mädchen-Standard)');
+    return;
+  }
+
+  if (type === 'wide') {
+    setStatus('🟢 BALLBESITZ: Mach dich GROSS! (Breite an der Linie, Raum für die 6)', 'success');
+    targets = [
+      { id:'tsv-4',  x:170, y:330 },
+      { id:'tsv-2',  x:260, y:80  }, // LV ganz an die Linie
+      { id:'tsv-3',  x:260, y:580 }, // RV ganz an die Linie
+      { id:'tsv-6',  x:340, y:330 }, // 6er zentral anspielbar
+      { id:'tsv-7',  x:510, y:90  }, // LM breit
+      { id:'tsv-10', x:480, y:330 },
+      { id:'tsv-11', x:510, y:570 }, // RM breit
+      { id:'tsv-9',  x:650, y:330 }, // ST bindet IV
+      { id:'ball',   x:185, y:330 }
+    ];
+  } else if (type === 'compact') {
+    setStatus('🔴 BALLVERLUST: Mach dich ENG! (Zentrum verdichten, Kette schließt)', 'warning');
+    targets = [
+      { id:'tsv-4',  x:210, y:330 },
+      { id:'tsv-2',  x:240, y:230 }, // LV rückt ein!
+      { id:'tsv-3',  x:240, y:430 }, // RV rückt ein!
+      { id:'tsv-6',  x:295, y:330 }, // Vor der Kette sichern
+      { id:'tsv-7',  x:370, y:220 },
+      { id:'tsv-10', x:380, y:330 },
+      { id:'tsv-11', x:370, y:440 },
+      { id:'tsv-9',  x:440, y:330 },
+      { id:'geg-10', x:420, y:330 },
+      { id:'ball',   x:435, y:330 }
+    ];
+  } else if (type === 'deepDefense') {
+    setStatus('🛡️ GEGNER IM EIGENEN STRAFRAUM: Kompakter Block am 16er, Doppelung außen!');
+    targets = [
+      { id:'tsv-1',  x:70,  y:330 },
+      { id:'tsv-2',  x:160, y:210 },
+      { id:'tsv-4',  x:145, y:330 },
+      { id:'tsv-3',  x:160, y:450 },
+      { id:'tsv-6',  x:210, y:330 }, // Sechserin direkt vor 16er
+      { id:'tsv-7',  x:220, y:180 }, // LM hilft doppeln
+      { id:'tsv-10', x:250, y:330 },
+      { id:'tsv-11', x:220, y:480 },
+      { id:'tsv-9',  x:340, y:330 }, // Konter-Anspielstation
+      // Gegner drücken an unseren 16er
+      { id:'geg-9',  x:180, y:300 },
+      { id:'geg-10', x:240, y:260 },
+      { id:'geg-7',  x:210, y:120 },
+      { id:'ball',   x:215, y:135 }
+    ];
+  } else if (type === 'throwinGood') {
+    setStatus('📐 EINWURF TSV: RICHTIG! LM löst sich VOR die Gegnerin → Passweg frei!', 'success');
+    targets = [
+      { id:'tsv-2',  x:420, y:30  }, // LV führt Einwurf aus
+      { id:'tsv-7',  x:400, y:110 }, // LM vor Gegnerin gelöst
+      { id:'geg-2',  x:430, y:150 }, // RV steht dahinter
+      { id:'tsv-6',  x:350, y:210 }, // 6er als Dreieck
+      { id:'ball',   x:420, y:40  }
+    ];
+  } else if (type === 'throwinBad') {
+    setStatus('⚠️ EINWURF: FALSCH! LM steht HINTER der Gegnerin im Passschatten!', 'warning');
+    targets = [
+      { id:'tsv-2',  x:420, y:30  }, // LV führt Einwurf aus
+      { id:'geg-2',  x:420, y:100 }, // RV blockiert direkt die Linie!
+      { id:'tsv-7',  x:420, y:165 }, // LM steht genau dahinter im Schatten
+      { id:'tsv-6',  x:320, y:240 },
+      { id:'ball',   x:420, y:40  }
+    ];
+  } else if (type === 'shift') {
+    setStatus('↔️ SPIELVERLAGERUNG: Linke Seite zugestellt → Rückpass zur 6 → Weit nach Rechts!');
+    targets = [
+      { id:'tsv-2',  x:380, y:120 },
+      { id:'geg-2',  x:410, y:120 },
+      { id:'geg-7',  x:430, y:180 },
+      { id:'tsv-6',  x:330, y:330 },
+      { id:'tsv-11', x:480, y:560 }, // RM völlig frei rechts!
+      { id:'ball',   x:370, y:120 }
+    ];
+  }
+
+  animateTo(targets, 800, () => {
+    if (type === 'throwinGood') {
+      drawArrow(420, 40, 400, 110, '#22c55e', 'arr-green');
+      showSpeechBubble('tsv-7', 'Vorne frei!', 2500);
+    } else if (type === 'throwinBad') {
+      drawArrow(420, 40, 420, 100, '#ef4444', 'arr-red');
+      showSpeechBubble('geg-2', 'Meiner!', 2500);
+      showSpeechBubble('tsv-7', 'Zugestellt...', 2500);
+    } else if (type === 'shift') {
+      drawArrow(380, 120, 330, 330, '#facc15', 'arr-yellow');
+      setTimeout(() => drawArrow(330, 330, 480, 560, '#22c55e', 'arr-green'), 600);
+      showSpeechBubble('tsv-6', 'Seitenwechsel!', 3000);
+    }
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// DYNAMIC SIMULATIONS FROM CURRENT POSITIONS
+// ──────────────────────────────────────────────────────────
+function simulateOpponentAttackFromCurrent() {
+  clearDrawings();
+  const gaps = detectDefensiveGaps();
+  const lv = players.find(p => p.id === 'tsv-2');
+  const rv = players.find(p => p.id === 'tsv-3');
+  const gegST = players.find(p => p.id === 'geg-9');
+  const gegW = players.find(p => p.id === 'geg-7');
+
+  if (gaps.length > 0) {
+    const targetGap = gaps[0];
+    const holeX = (targetGap.p1.x + targetGap.p2.x) / 2;
+    const holeY = (targetGap.p1.y + targetGap.p2.y) / 2;
+
+    setStatus(`🚨 GEGNER GREIFT DIE LÜCKE AN! Pass direkt in die Schnittstelle ${targetGap.side}!`, 'warning');
+    
+    // Pass into the gap
+    drawArrow(gegST ? gegST.x : 540, gegST ? gegST.y : 330, holeX, holeY, '#ef4444', 'arr-red');
+    animateTo([
+      { id: 'ball', x: holeX, y: holeY },
+      { id: 'geg-7', x: holeX - 10, y: holeY }
+    ], 800, () => {
+      showSpeechBubble('geg-7', '⚡ Frei durch!', 2500);
+      setTimeout(() => {
+        // Opponent shoots at goal
+        drawArrow(holeX, holeY, 80, 330, '#ef4444', 'arr-red');
+        animateTo([{ id: 'ball', x: 85, y: 330 }], 500, () => {
+          setStatus('❌ Torchance für den Gegner! Konsequenz der offenen Kette.', 'warning');
+        });
+      }, 1000);
+    });
+  } else if (lv && lv.x > 380) {
+    // LV out of position
+    setStatus('🚨 LV FEHLT HINTEN! Gegner spielt den Ball in ihren leeren Raum!', 'warning');
+    const holeX = 180;
+    const holeY = 140;
+    drawArrow(540, 330, holeX, holeY, '#ef4444', 'arr-red');
+    animateTo([
+      { id: 'ball', x: holeX, y: holeY },
+      { id: 'geg-7', x: holeX + 15, y: holeY }
+    ], 900, () => {
+      showSpeechBubble('geg-7', 'Danke für den Platz!', 2500);
+    });
+  } else {
+    // Defense is solid
+    setStatus('🛡️ GUTE VERTEIDIGUNG! Kette steht kompakt – Gegner findet keinen Passweg!', 'success');
+    drawArrow(540, 330, 480, 330, '#facc15', 'arr-yellow');
+    animateTo([{ id: 'ball', x: 480, y: 330 }], 600, () => {
+      showSpeechBubble('tsv-4', 'Abgelaufen!', 2500);
+    });
+  }
+}
+
+function simulateFind6FromCurrent() {
+  clearDrawings();
+  const p6 = players.find(p => p.id === 'tsv-6');
+  const ball = players.find(p => p.id === 'ball');
+  const rm = players.find(p => p.id === 'tsv-11');
+  const lm = players.find(p => p.id === 'tsv-7');
+
+  if (!p6 || !ball) return;
+
+  // Check if 6 is in shadow
+  if (isInCoverShadow(p6)) {
+    setStatus('⚠️ 6er steht im Deckungsschatten! Sie muss erst einen Schritt raustreten...', 'warning');
+    // Step out of shadow
+    animateTo([{ id: 'tsv-6', x: p6.x, y: p6.y - 35 }], 500, () => {
+      showSpeechBubble('tsv-6', 'Jetzt frei!', 2000);
+      drawArrow(ball.x, ball.y, p6.x, p6.y - 35, '#22c55e', 'arr-green');
+      animateTo([{ id: 'ball', x: p6.x, y: p6.y - 35 }], 600, () => {
+        // Shift wide
+        const target = (rm && !isInCoverShadow(rm)) ? rm : lm;
+        if (target) {
+          drawArrow(p6.x, p6.y - 35, target.x, target.y, '#22c55e', 'arr-green');
+          animateTo([{ id: 'ball', x: target.x, y: target.y }], 700);
+          showSpeechBubble(target.id, 'Tempo!', 2500);
+        }
+      });
+    });
+  } else {
+    // Direct pass to 6
+    setStatus('⬡ Pass zur 6 → Aufdrehen → Verlagerung!', 'success');
+    drawArrow(ball.x, ball.y, p6.x, p6.y, '#22c55e', 'arr-green');
+    animateTo([{ id: 'ball', x: p6.x, y: p6.y }], 600, () => {
+      showSpeechBubble('tsv-6', 'Ich hab Zeit!', 2000);
+      const target = rm || lm;
+      if (target) {
+        setTimeout(() => {
+          drawArrow(p6.x, p6.y, target.x, target.y, '#22c55e', 'arr-green');
+          animateTo([{ id: 'ball', x: target.x, y: target.y }], 700);
+        }, 800);
+      }
+    });
+  }
+}
+
+function simulateThrowinExecution() {
+  clearDrawings();
+  const lm = players.find(p => p.id === 'tsv-7');
+  const ball = players.find(p => p.id === 'ball');
+  const opp = players.find(p => p.id === 'geg-2');
+
+  if (!lm || !ball) return;
+
+  if (isInCoverShadow(lm)) {
+    setStatus('❌ ABGEFANGEN! Spielerin stand im Passschatten der Gegnerin!', 'warning');
+    drawArrow(ball.x, ball.y, opp ? opp.x : lm.x, opp ? opp.y : lm.y, '#ef4444', 'arr-red');
+    animateTo([{ id: 'ball', x: opp ? opp.x : lm.x, y: opp ? opp.y : lm.y }], 600);
+    showSpeechBubble(opp ? opp.id : 'geg-2', 'Geklärt!', 2500);
+  } else {
+    setStatus('✅ ERFOLGREICHER EINWURF! Vor die Gegnerin gelöst und sicher angenommen!', 'success');
+    drawArrow(ball.x, ball.y, lm.x, lm.y, '#22c55e', 'arr-green');
+    animateTo([{ id: 'ball', x: lm.x, y: lm.y }], 600);
+    showSpeechBubble('tsv-7', 'Festgemacht!', 2500);
+  }
+}
+
+function demoErrorLV() {
+  clearDrawings();
+  setStatus('⚠️ LV stürmt blind vor → Riesiges Loch hinten links!', 'warning');
+  animateTo([
+    { id:'tsv-2', x:530, y:450 },
+    { id:'ball',  x:545, y:450 }
+  ], 800, () => {
+    // Opponent exploits
+    setTimeout(() => simulateOpponentAttackFromCurrent(), 400);
+  });
+}
+
+function demoErrorCenterOpen() {
+  clearDrawings();
+  setStatus('⚠️ ZENTRUM OFFEN: IV & 6er stehen zu weit auseinander!', 'warning');
+  animateTo([
+    { id:'tsv-4', x:180, y:180 },
+    { id:'tsv-6', x:320, y:510 }
+  ], 800, () => {
+    runLiveTacticAnalysis();
+  });
+}
+
+function simPressing() {
+  clearDrawings();
+  setStatus('⬆️ HOHES PRESSING: Alle schieben vor, Gegner unter Druck setzen!', 'success');
+  animateTo([
+    { id:'tsv-9',  x:770, y:330 },
+    { id:'tsv-7',  x:680, y:170 },
+    { id:'tsv-11', x:680, y:490 },
+    { id:'tsv-10', x:650, y:330 },
+    { id:'tsv-6',  x:540, y:330 },
+    { id:'tsv-2',  x:420, y:140 },
+    { id:'tsv-3',  x:420, y:520 },
+    { id:'tsv-4',  x:360, y:330 }
+  ], 900, () => {
+    showSpeechBubble('tsv-9', 'Presse!', 2000);
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// FREISPIEL (FREE-PLAY) PASSEN
+// ──────────────────────────────────────────────────────────
+function enableFreePlay(enable) {
+  freePlayMode = enable;
+  fpSelected = null;
+  const btn = document.getElementById('btn-toggle-freeplay');
+  if (btn) {
+    btn.textContent = enable ? '⏹️ Freispiel Beenden' : '▶️ Freispiel-Modus Aktivieren';
+    btn.className = enable ? 'btn primary span2' : 'btn green span2';
+  }
+  clearDrawings();
+  renderPlayers();
+  if (enable) {
+    setStatus('🎮 Freispiel aktiv: Tippe eine rote Spielerin an → dann das Passziel!');
+  }
+}
+
+function toggleFreePlay() {
+  enableFreePlay(!freePlayMode);
+}
+
+function handleFreePlaySelect(e, p) {
+  e.stopPropagation();
+  if (!freePlayMode) return;
+
+  if (p.team === 'tsv') {
+    fpSelected = p.id;
+    renderPlayers();
+    setStatus(`⚽ ${p.num} (${p.role}) hat den Ball – wohin soll der Pass gehen?`);
+  }
+}
+
+function resetBallTo6() {
+  const p6 = players.find(p => p.id === 'tsv-6');
+  if (p6) {
+    animateTo([{ id: 'ball', x: p6.x + 15, y: p6.y }], 500);
+    setStatus('⚽ Ball liegt bei der 6!');
+  }
+}
+
+// Click on pitch during Free-Play
+svg.addEventListener('click', e => {
+  if (activeTab === 'draw') return;
+  if (!freePlayMode || !fpSelected) return;
+
+  const passer = players.find(p => p.id === fpSelected);
+  if (!passer) return;
+
+  const target = toSVGPoint(e.clientX, e.clientY);
+
+  // Check if clicking directly on a teammate
+  const receiver = players.find(p => {
+    return p.team === 'tsv' && p.id !== fpSelected && Math.hypot(p.x - target.x, p.y - target.y) < 24;
+  });
+
+  clearDrawings();
+
+  if (receiver) {
+    // Check offside
+    if (isOffside(receiver)) {
+      drawArrow(passer.x, passer.y, receiver.x, receiver.y, '#ef4444', 'arr-red');
+      setStatus(`⛔ ABSEITS! Nr.${receiver.num} (${receiver.role}) steht im Abseits!`, 'warning');
+      showSpeechBubble(receiver.id, '⛔ Abseits!', 2500);
+      return;
+    }
+    // Check cover shadow
+    if (isInCoverShadow(receiver)) {
+      drawArrow(passer.x, passer.y, receiver.x, receiver.y, '#f59e0b', 'arr-yellow');
+      setStatus(`⚠️ Riskanter Pass! Nr.${receiver.num} stand im Deckungsschatten!`, 'warning');
+      showSpeechBubble(receiver.id, 'Puh, knapp!', 2500);
+    } else {
+      drawArrow(passer.x, passer.y, receiver.x, receiver.y, '#22c55e', 'arr-green');
+      setStatus(`✅ Sauberer Pass zu Nr.${receiver.num} (${receiver.role})!`, 'success');
+      showSpeechBubble(receiver.id, 'Danke!', 2000);
+    }
+    // Move ball
+    animateTo([{ id: 'ball', x: receiver.x + 12, y: receiver.y }], 500);
+    fpSelected = receiver.id;
+    renderPlayers();
+  } else {
+    // Pass to space
+    if (showOffside && target.x > getOffsideX() && target.x > 500) {
+      drawArrow(passer.x, passer.y, target.x, target.y, '#ef4444', 'arr-red');
+      setStatus('⛔ Pass in die Abseitszone!', 'warning');
+    } else {
+      drawArrow(passer.x, passer.y, target.x, target.y, '#38bdf8', 'arr-blue');
+      animateTo([{ id: 'ball', x: target.x, y: target.y }], 500);
+      setStatus('⚽ Pass in den freien Raum!');
+      fpSelected = null;
+      renderPlayers();
+    }
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// DRAWING / TELESTRATION TOOLS
+// ──────────────────────────────────────────────────────────
+function setDrawTool(tool) {
+  currentDrawTool = tool;
+  ['pen','pass','run'].forEach(t => {
+    const el = document.getElementById(`btn-tool-${t}`);
+    if (el) el.classList.toggle('active-toggle', t === tool);
+  });
+}
+function setDrawColor(col) {
+  currentDrawColor = col;
+}
+
+svg.addEventListener('pointerdown', e => {
+  if (activeTab !== 'draw') return;
+  isDrawing = true;
+  drawStartPoint = toSVGPoint(e.clientX, e.clientY);
+
+  if (currentDrawTool === 'pen') {
+    currentPathEl = mkEl('path');
+    setAttrs(currentPathEl, {
+      d: `M ${drawStartPoint.x} ${drawStartPoint.y}`,
+      stroke: currentDrawColor,
+      'stroke-width': 3,
+      fill: 'none',
+      'stroke-linecap': 'round',
+      'stroke-linejoin': 'round'
+    });
+    layerDrawings.appendChild(currentPathEl);
+  } else {
+    // Line with arrow
+    currentPathEl = mkEl('line');
+    setAttrs(currentPathEl, {
+      x1: drawStartPoint.x, y1: drawStartPoint.y,
+      x2: drawStartPoint.x, y2: drawStartPoint.y,
+      stroke: currentDrawColor,
+      'stroke-width': 3,
+      'stroke-dasharray': currentDrawTool === 'pass' ? '8 6' : 'none',
+      'marker-end': 'url(#arr-yellow)'
+    });
+    layerDrawings.appendChild(currentPathEl);
+  }
+});
+
+svg.addEventListener('pointermove', e => {
+  if (!isDrawing || !currentPathEl) return;
+  const pt = toSVGPoint(e.clientX, e.clientY);
+  if (currentDrawTool === 'pen') {
+    const d = currentPathEl.getAttribute('d') + ` L ${pt.x} ${pt.y}`;
+    currentPathEl.setAttribute('d', d);
+  } else {
+    setAttrs(currentPathEl, { x2: pt.x, y2: pt.y });
+  }
+});
+
+svg.addEventListener('pointerup', () => {
+  if (isDrawing && currentPathEl) {
+    drawingHistory.push(currentPathEl);
+    currentPathEl = null;
+  }
+  isDrawing = false;
+});
+
+function undoLastDrawing() {
+  if (drawingHistory.length > 0) {
+    const el = drawingHistory.pop();
+    el.remove();
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// TOGGLE OVERLAYS
+// ──────────────────────────────────────────────────────────
+function toggleZones() {
+  showZones = !showZones;
+  document.getElementById('btn-zones').classList.toggle('active-toggle', showZones);
+  renderPlayers();
+}
+function toggleOffside() {
+  showOffside = !showOffside;
+  document.getElementById('btn-offside').classList.toggle('active-toggle', showOffside);
+  renderPlayers();
+}
+function toggleCones() {
+  showCones = !showCones;
+  document.getElementById('btn-cones').classList.toggle('active-toggle', showCones);
+  renderPlayers();
+}
+function toggleGaps() {
+  showGaps = !showGaps;
+  document.getElementById('btn-gaps').classList.toggle('active-toggle', showGaps);
+  renderPlayers();
+}
+function toggleCorridors() {
+  showCorridors = !showCorridors;
+  layerCorridors.setAttribute('display', showCorridors ? 'inline' : 'none');
+  document.getElementById('btn-toggle-corridors').classList.toggle('active-toggle', showCorridors);
+}
+function highlightGoalBox() {
+  clearDrawings();
+  const box = mkEl('rect');
+  setAttrs(box, { x: 50, y: 160, width: 140, height: 340,
+    fill: 'rgba(239, 68, 68, 0.25)', stroke: '#ef4444', 'stroke-width': 2 });
+  layerTactics.appendChild(box);
+  setStatus('🎯 Eigener Strafraum: Zentrum mit allen Kräften schützen!');
+}
+
+// ──────────────────────────────────────────────────────────
+// FORMATIONS
+// ──────────────────────────────────────────────────────────
+function setFormation(fmt) {
+  clearDrawings();
+  if (fmt === '3131') {
+    resetToInitial();
+    setStatus('Formation: 3-1-3-1 (Basis)');
+  } else if (fmt === '332') {
+    animateTo([
+      { id:'tsv-1', x:80,  y:330 },
+      { id:'tsv-2', x:210, y:145 },
+      { id:'tsv-4', x:185, y:330 },
+      { id:'tsv-3', x:210, y:515 },
+      { id:'tsv-6', x:350, y:145 },
+      { id:'tsv-7', x:350, y:330 },
+      { id:'tsv-10',x:350, y:515 },
+      { id:'tsv-11',x:480, y:210 },
+      { id:'tsv-9', x:480, y:450 }
+    ]);
+    setStatus('Formation: 3-3-2 (Doppelsturm)');
+  } else if (fmt === '433') {
+    animateTo([
+      { id:'tsv-1', x:80,  y:330 },
+      { id:'tsv-2', x:210, y:120 },
+      { id:'tsv-4', x:200, y:260 },
+      { id:'tsv-3', x:200, y:400 },
+      { id:'tsv-11',x:210, y:540 },
+      { id:'tsv-6', x:350, y:230 },
+      { id:'tsv-10',x:350, y:330 },
+      { id:'tsv-7', x:350, y:430 },
+      { id:'tsv-9', x:500, y:330 }
+    ]);
+    setStatus('Formation: 4-3-3 (11er-Feld)');
+  } else if (fmt === '4231') {
+    animateTo([
+      { id:'tsv-1', x:80,  y:330 },
+      { id:'tsv-2', x:210, y:120 },
+      { id:'tsv-4', x:200, y:260 },
+      { id:'tsv-3', x:200, y:400 },
+      { id:'tsv-11',x:210, y:540 },
+      { id:'tsv-6', x:330, y:260 },
+      { id:'tsv-7', x:330, y:400 },
+      { id:'tsv-10',x:440, y:330 },
+      { id:'tsv-9', x:520, y:330 }
+    ]);
+    setStatus('Formation: 4-2-3-1 (11er-Feld)');
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// ANIMATION ENGINE
+// ──────────────────────────────────────────────────────────
+function animateTo(targetCoords, duration = 800, onDone) {
+  const t0 = performance.now();
+  const starts = players.map(p => ({ x: p.x, y: p.y }));
+  function step(now) {
+    const prog = Math.min((now - t0) / duration, 1);
+    const ease = prog * (2 - prog);
+    players.forEach((p, i) => {
+      const tgt = targetCoords.find(t => t.id === p.id);
+      if (tgt) {
+        p.x = starts[i].x + (tgt.x - starts[i].x) * ease;
+        p.y = starts[i].y + (tgt.y - starts[i].y) * ease;
+      }
+    });
+    renderPlayers();
+    if (prog < 1) {
+      requestAnimationFrame(step);
+    } else if (onDone) {
+      onDone();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+// ──────────────────────────────────────────────────────────
+// SPEECH BUBBLE & HELPERS
+// ──────────────────────────────────────────────────────────
+function simSpeech(type) {
+  clearDrawings();
+  if (type === 'ruecken') {
+    setStatus('🗣️ "Gegner im Rücken!" – Direkt klatschen lassen!');
+    showSpeechBubble('tsv-6', 'Gegner im Rücken! Klatsch!', 3500);
+  } else if (type === 'zeit') {
+    setStatus('🗣️ "Du hast Zeit!" – Aufdrehen und Spiel vor sich haben!');
+    showSpeechBubble('tsv-4', 'Du hast Zeit! Dreh auf!', 3000);
+  } else if (type === 'leo') {
+    setStatus('📢 "Leo!" – Ball gehört mir, keine Kollision!');
+    showSpeechBubble('tsv-2', 'LEO! MEINER!', 3000);
+  } else if (type === 'schulter') {
+    setStatus('👀 Schulterblick: Vor der Ballannahme Raum scannen!');
+    showSpeechBubble('tsv-6', 'Schulterblick...', 1600);
+    setTimeout(() => showSpeechBubble('tsv-6', 'Jetzt zu mir!', 2400), 1700);
+  }
+}
+
+function showSpeechBubble(playerId, text, duration = 3000) {
+  const p = players.find(x => x.id === playerId);
+  if (!p) return;
+  const g = mkEl('g');
+  g.setAttribute('transform', `translate(${p.x},${p.y - 36})`);
+  const w = Math.max(76, text.length * 6.5);
+  g.innerHTML = `
+    <rect x="${-w/2}" y="-20" width="${w}" height="20" rx="7" fill="#facc15" stroke="#111" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.5))"/>
+    <text x="0" y="-6" text-anchor="middle" font-size="9" font-weight="900" fill="#000">${text}</text>
+  `;
+  layerBubbles.appendChild(g);
+  setTimeout(() => g.remove(), duration);
+}
+
+function drawArrow(x1, y1, x2, y2, color, markerId) {
+  const line = mkEl('line');
+  setAttrs(line, {
+    x1, y1, x2, y2,
+    stroke: color, 'stroke-width': 3,
+    'stroke-dasharray': '8 5',
+    'marker-end': `url(#${markerId})`
+  });
+  layerTactics.appendChild(line);
+}
+
+function clearDrawings() {
+  layerTactics.innerHTML = '';
+  layerBubbles.innerHTML = '';
+  banner.className = '';
+}
+
+function clearAllPitch() {
+  clearDrawings();
+  layerDrawings.innerHTML = '';
+  drawingHistory = [];
+  setStatus('Zeichnungen & Markierungen gelöscht.');
+}
+
+function resetToInitial() {
+  players = JSON.parse(JSON.stringify(initialPlayers));
+  clearDrawings();
+  renderPlayers();
+  setStatus('Spielfeld zurückgesetzt auf Grundaufstellung.');
+}
+
+function setStatus(text, type = '') {
+  banner.textContent = text;
+  banner.className = type ? type : '';
+}
+
+function mkEl(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+function setAttrs(el, attrs) { for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, v); }
+function toSVGPoint(cx, cy) {
+  const pt = svg.createSVGPoint();
+  pt.x = cx; pt.y = cy;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function openHelp()  { document.getElementById('help-modal').classList.add('open'); }
+function closeHelp() { document.getElementById('help-modal').classList.remove('open'); }
+
+// Init default toggles UI
+document.getElementById('btn-offside').classList.add('active-toggle');
+document.getElementById('btn-cones').classList.add('active-toggle');
+document.getElementById('btn-gaps').classList.add('active-toggle');
+
+renderPlayers();
+</script>
+</body>
+</html>
