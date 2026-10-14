@@ -176,7 +176,6 @@ header {
   height: 100%;
 }
 
-/* Custom scrollbar for sidebar */
 #sidebar::-webkit-scrollbar { width: 5px; }
 #sidebar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
 #sidebar::-webkit-scrollbar-thumb { background: #2d3e52; border-radius: 4px; }
@@ -281,16 +280,10 @@ header {
   z-index: 25;
   text-align: center;
   max-width: 82%;
-  transition: all 0.2s;
+  transition: all 0.15s ease-out;
 }
 #status-banner.warning { border-color: #ef4444; color: #fca5a5; background: rgba(30,10,12,0.94); }
 #status-banner.success { border-color: #22c55e; color: #86efac; background: rgba(10,28,16,0.94); }
-
-/* FLOATING INFO BADGE ON PITCH */
-.pitch-badge {
-  pointer-events: none;
-  font-family: inherit;
-}
 
 /* ════════════ HELP MODAL ════════════ */
 #help-modal {
@@ -320,10 +313,6 @@ header {
   font-size: 16px; cursor: pointer; font-weight: 900;
   display: flex; align-items: center; justify-content: center;
 }
-.help-tag { display: inline-block; background: #1e3a5f; color: #93c5fd; border-radius: 5px; padding: 1px 7px; font-size: 9px; font-weight: 700; margin: 1px; }
-.help-tag.red { background: #4a1010; color: #fca5a5; }
-.help-tag.green { background: #0d3320; color: #86efac; }
-.help-tag.amber { background: #3d2400; color: #fcd34d; }
 </style>
 </head>
 <body>
@@ -355,7 +344,7 @@ header {
 
   <!-- ════════════ MAIN VIEW ════════════ -->
   <div id="main-content">
-    <div id="status-banner">Spielerin oder Ball ziehen – oder Taktik-Szenario wählen!</div>
+    <div id="status-banner">Spielerin oder Ball berühren und frei über den ganzen Platz schieben!</div>
 
     <!-- PITCH CONTAINER -->
     <div id="pitch-container">
@@ -395,17 +384,11 @@ header {
 
         <!-- 5-Korridore (DFB / Best Practice Zonen, toggleable) -->
         <g id="layer-corridors" display="none" opacity="0.18">
-          <!-- Flügel links (oben) y: 30 bis 160 -->
           <rect x="50" y="30" width="900" height="130" fill="#38bdf8"/>
-          <!-- Halbraum links y: 160 bis 270 -->
           <rect x="50" y="160" width="900" height="110" fill="#facc15"/>
-          <!-- Zentrum y: 270 bis 390 -->
           <rect x="50" y="270" width="900" height="120" fill="#22c55e"/>
-          <!-- Halbraum rechts y: 390 bis 500 -->
           <rect x="50" y="390" width="900" height="110" fill="#facc15"/>
-          <!-- Flügel rechts y: 500 bis 630 -->
           <rect x="50" y="500" width="900" height="130" fill="#38bdf8"/>
-          <!-- Zonentexte -->
           <text x="60" y="100" fill="#38bdf8" font-size="12" font-weight="800">Flügel Links</text>
           <text x="60" y="220" fill="#facc15" font-size="12" font-weight="800">Halbraum Links</text>
           <text x="60" y="335" fill="#22c55e" font-size="12" font-weight="800">Zentrum</text>
@@ -742,17 +725,20 @@ const banner         = document.getElementById('status-banner');
 
 // ═══ State ═══
 let showZones     = false;
-let showOffside   = true;   // on by default for great tactical clarity
-let showCones     = true;   // on by default
-let showGaps      = true;   // on by default: highlights open channels
+let showOffside   = true;
+let showCones     = true;
+let showGaps      = true;
 let showCorridors = false;
 
 let activeTab     = 'tactic';
 let freePlayMode  = false;
 let fpSelected    = null;
 
+// Global Drag State (Persistent throughout drag across the entire pitch)
+let activeDrag = null;
+
 // Drawing tool state
-let currentDrawTool  = 'pen'; // 'pen', 'pass', 'run'
+let currentDrawTool  = 'pen';
 let currentDrawColor = '#facc15';
 let isDrawing        = false;
 let drawStartPoint   = null;
@@ -811,7 +797,7 @@ function switchMainTab(tab) {
 }
 
 // ──────────────────────────────────────────────────────────
-// DYNAMIC ANALYSIS & OFF-SIDE
+// DYNAMIC ANALYSIS & OFFSIDE
 // ──────────────────────────────────────────────────────────
 function getOffsideX() {
   const defenders = players
@@ -836,36 +822,29 @@ function isInCoverShadow(p) {
   
   return players.some(opp => {
     if (opp.team !== 'geg') return false;
-    // Vector from ball to opponent
     const vBx = opp.x - ball.x;
     const vBy = opp.y - ball.y;
     const distBallOpp = Math.hypot(vBx, vBy);
-    if (distBallOpp < 15) return false;
+    if (distBallOpp < 18) return false;
 
-    // Vector from ball to player
     const vPx = p.x - ball.x;
     const vPy = p.y - ball.y;
     const distBallP = Math.hypot(vPx, vPy);
 
-    // Player must be behind opponent relative to the ball
     if (distBallP <= distBallOpp) return false;
 
-    // Angle difference
     const angleOpp = Math.atan2(vBy, vBx);
     const angleP   = Math.atan2(vPy, vPx);
     let diff = Math.abs(angleOpp - angleP);
     if (diff > Math.PI) diff = 2 * Math.PI - diff;
 
-    // Width of cover shadow narrows with distance or angular cone ~ 22 deg
-    const maxAngle = 0.38; // ~22 degrees
-    const maxDist = 260;   // shadow length
+    const maxAngle = 0.38;
+    const maxDist = 260;
     return diff < maxAngle && (distBallP - distBallOpp) < maxDist;
   });
 }
 
-// ──────────────────────────────────────────────────────────
 // GAP DETECTION IN DEFENSIVE LINE
-// ──────────────────────────────────────────────────────────
 function detectDefensiveGaps() {
   const tsvDef = [
     players.find(p => p.id === 'tsv-2'), // LV
@@ -875,12 +854,10 @@ function detectDefensiveGaps() {
 
   const gaps = [];
   if (tsvDef.length >= 2) {
-    // Gap between LV and IV
     const d1 = Math.hypot(tsvDef[0].x - tsvDef[1].x, tsvDef[0].y - tsvDef[1].y);
     if (d1 > 170) {
       gaps.push({ p1: tsvDef[0], p2: tsvDef[1], dist: d1, side: 'Links (LV - IV)' });
     }
-    // Gap between IV and RV
     const d2 = Math.hypot(tsvDef[1].x - tsvDef[2].x, tsvDef[1].y - tsvDef[2].y);
     if (d2 > 170) {
       gaps.push({ p1: tsvDef[1], p2: tsvDef[2], dist: d2, side: 'Rechts (IV - RV)' });
@@ -890,14 +867,13 @@ function detectDefensiveGaps() {
 }
 
 // ──────────────────────────────────────────────────────────
-// RENDERING
+// OVERLAYS RENDERING (LIGHTWEIGHT & INDEPENDENT OF PLAYERS)
 // ──────────────────────────────────────────────────────────
-function renderPlayers() {
-  layerPlayers.innerHTML = '';
-  layerZones.innerHTML   = '';
+function updateTacticalOverlays() {
   layerOffside.innerHTML = '';
   layerCones.innerHTML   = '';
   layerGaps.innerHTML    = '';
+  layerZones.innerHTML   = '';
 
   const ball = players.find(p => p.id === 'ball') || { x: 300, y: 330 };
 
@@ -907,11 +883,11 @@ function renderPlayers() {
     const line = mkEl('line');
     setAttrs(line, { x1: ox, y1: 30, x2: ox, y2: 630,
       stroke: '#38bdf8', 'stroke-width': 2.5,
-      'stroke-dasharray': '10 6', opacity: 0.85 });
+      'stroke-dasharray': '10 6', opacity: 0.85, 'pointer-events': 'none' });
     layerOffside.appendChild(line);
 
     const lbl = mkEl('text');
-    setAttrs(lbl, { x: ox + 6, y: 48, 'font-size': 11, 'font-weight': 900, fill: '#38bdf8', opacity: 0.9 });
+    setAttrs(lbl, { x: ox + 6, y: 48, 'font-size': 11, 'font-weight': 900, fill: '#38bdf8', opacity: 0.9, 'pointer-events': 'none' });
     lbl.textContent = 'ABSEITS-LINIE';
     layerOffside.appendChild(lbl);
 
@@ -924,18 +900,16 @@ function renderPlayers() {
   // 2. Passschatten / Deckungskegel (relative to Ball!)
   if (showCones) {
     players.filter(p => p.team === 'geg' && p.role !== 'TW').forEach(opp => {
-      // Vector from ball to opponent
       const dx = opp.x - ball.x;
       const dy = opp.y - ball.y;
       const dist = Math.hypot(dx, dy) || 1;
       const dirX = dx / dist;
       const dirY = dy / dist;
 
-      // Project shadow behind opponent away from ball
-      const shadowLength = 220;
+      const shadowLength = 230;
       const perpX = -dirY;
       const perpY = dirX;
-      const halfWidth = 36; // cone spread
+      const halfWidth = 38;
 
       const pLeftX  = opp.x + dirX * shadowLength + perpX * halfWidth;
       const pLeftY  = opp.y + dirY * shadowLength + perpY * halfWidth;
@@ -953,7 +927,6 @@ function renderPlayers() {
       });
       layerCones.appendChild(cone);
 
-      // Small tackling radius around opponent
       const circ = mkEl('circle');
       setAttrs(circ, { cx: opp.x, cy: opp.y, r: 42,
         fill: 'none', stroke: '#ef4444', 'stroke-width': 1,
@@ -970,49 +943,63 @@ function renderPlayers() {
       setAttrs(line, {
         x1: g.p1.x, y1: g.p1.y, x2: g.p2.x, y2: g.p2.y,
         stroke: '#ef4444', 'stroke-width': 3,
-        'stroke-dasharray': '8 5'
+        'stroke-dasharray': '8 5',
+        'pointer-events': 'none'
       });
       layerGaps.appendChild(line);
 
-      // Warning badge
       const midX = (g.p1.x + g.p2.x) / 2;
       const midY = (g.p1.y + g.p2.y) / 2;
       const gBadge = mkEl('g');
       gBadge.setAttribute('transform', `translate(${midX}, ${midY})`);
+      gBadge.setAttribute('pointer-events', 'none');
       gBadge.innerHTML = `
-        <rect x="-42" y="-12" width="84" height="24" rx="6" fill="#991b1b" stroke="#f87171" stroke-width="1.5"/>
-        <text y="4" text-anchor="middle" font-size="9" font-weight="900" fill="#fff">⚠️ LÜCKE: ${Math.round(g.dist/10)}m</text>
+        <rect x="-44" y="-12" width="88" height="24" rx="6" fill="#991b1b" stroke="#f87171" stroke-width="1.5"/>
+        <text y="4" text-anchor="middle" font-size="9" font-weight="900" fill="#fff" pointer-events="none">⚠️ LÜCKE: ${Math.round(g.dist/10)}m</text>
       `;
       layerGaps.appendChild(gBadge);
     });
   }
 
-  // 4. Players & Ball
-  players.forEach(p => {
-    if (p.team === 'ball') {
-      const g = mkEl('g');
-      g.setAttribute('transform', `translate(${p.x},${p.y})`);
-      g.id = p.id;
-      g.innerHTML = `
-        <circle r="14" fill="#fff" stroke="#111" stroke-width="2.5" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.6))"/>
-        <circle r="5" fill="#111"/>
-      `;
-      enableDrag(g, p);
-      layerPlayers.appendChild(g);
-      return;
-    }
-
-    // Wirkungskreise
-    if (showZones) {
+  // 4. Wirkungskreise
+  if (showZones) {
+    players.forEach(p => {
+      if (p.team === 'ball') return;
       const z = mkEl('circle');
       setAttrs(z, {
         cx: p.x, cy: p.y,
         r: p.is6 ? 85 : 62,
         fill: p.team === 'tsv' ? 'rgba(229,36,33,0.13)' : 'rgba(100,116,139,0.12)',
         stroke: p.team === 'tsv' ? '#e52421' : '#64748b',
-        'stroke-dasharray': '4 4', 'stroke-width': 1.5
+        'stroke-dasharray': '4 4', 'stroke-width': 1.5,
+        'pointer-events': 'none'
       });
       layerZones.appendChild(z);
+    });
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// FULL PLAYER RENDERING (RE-CREATES PLAYER DOM ONLY ON DEMAND)
+// ──────────────────────────────────────────────────────────
+function renderPlayers() {
+  updateTacticalOverlays();
+
+  layerPlayers.innerHTML = '';
+
+  players.forEach(p => {
+    if (p.team === 'ball') {
+      const g = mkEl('g');
+      g.setAttribute('transform', `translate(${p.x},${p.y})`);
+      g.id = p.id;
+      g.style.cursor = 'grab';
+      g.innerHTML = `
+        <circle r="14" fill="#fff" stroke="#111" stroke-width="2.5" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.6))"/>
+        <circle r="5" fill="#111"/>
+      `;
+      g.addEventListener('pointerdown', e => onPlayerPointerDown(e, p, g));
+      layerPlayers.appendChild(g);
+      return;
     }
 
     const isTsv = p.team === 'tsv';
@@ -1037,6 +1024,7 @@ function renderPlayers() {
     const g = mkEl('g');
     g.setAttribute('transform', `translate(${p.x},${p.y})`);
     g.id = p.id;
+    g.style.cursor = 'grab';
     g.innerHTML = `
       ${extras}
       <circle r="20" fill="${mainColor}" stroke="#fff" stroke-width="2.5" filter="drop-shadow(0 3px 6px rgba(0,0,0,0.5))"/>
@@ -1045,43 +1033,127 @@ function renderPlayers() {
       <text text-anchor="middle" y="35" font-size="9" font-weight="800" fill="#f8fafc" pointer-events="none">${p.role}</text>
     `;
 
-    if (!freePlayMode && activeTab !== 'draw') {
-      enableDrag(g, p);
-    } else if (freePlayMode) {
-      g.style.cursor = 'pointer';
-      g.addEventListener('pointerdown', e => handleFreePlaySelect(e, p));
-    }
-
+    g.addEventListener('pointerdown', e => onPlayerPointerDown(e, p, g));
     layerPlayers.appendChild(g);
   });
 }
 
 // ──────────────────────────────────────────────────────────
-// DRAG & DROP FOR PLAYERS & BALL
+// PERSISTENT POINTER DRAGGING ACROSS ENTIRE FIELD
 // ──────────────────────────────────────────────────────────
-function enableDrag(element, playerObj) {
-  let dragging = false;
-  element.addEventListener('pointerdown', e => {
-    if (activeTab === 'draw') return;
-    dragging = true;
-    element.setPointerCapture(e.pointerId);
-    e.stopPropagation();
-  });
-  element.addEventListener('pointermove', e => {
-    if (!dragging) return;
-    const pt = toSVGPoint(e.clientX, e.clientY);
-    playerObj.x = clamp(pt.x, 55, 945);
-    playerObj.y = clamp(pt.y, 35, 625);
+function onPlayerPointerDown(e, playerObj, groupEl) {
+  if (activeTab === 'draw') return;
+
+  if (freePlayMode) {
+    handleFreePlaySelect(e, playerObj);
+    return;
+  }
+
+  e.stopPropagation();
+  e.preventDefault();
+
+  activeDrag = {
+    player: playerObj,
+    element: groupEl,
+    pointerId: e.pointerId
+  };
+
+  try {
+    svg.setPointerCapture(e.pointerId);
+  } catch (err) {}
+}
+
+svg.addEventListener('pointermove', e => {
+  if (!activeDrag) return;
+  e.preventDefault();
+
+  const pt = toSVGPoint(e.clientX, e.clientY);
+  activeDrag.player.x = clamp(pt.x, 55, 945);
+  activeDrag.player.y = clamp(pt.y, 35, 625);
+
+  // Directly update transform on the existing DOM element (zero recreation!)
+  activeDrag.element.setAttribute('transform', `translate(${activeDrag.player.x},${activeDrag.player.y})`);
+
+  // Update dynamic lines, cones & offside in real time
+  updateTacticalOverlays();
+
+  // Instant tactical feedback while dragging!
+  showLiveDragAnalysis(activeDrag.player);
+});
+
+svg.addEventListener('pointerup', e => {
+  if (activeDrag) {
+    try {
+      svg.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+    activeDrag = null;
+    renderPlayers(); // re-sync rings cleanly on release
+  }
+});
+
+svg.addEventListener('pointercancel', e => {
+  if (activeDrag) {
+    try {
+      svg.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+    activeDrag = null;
     renderPlayers();
-  });
-  element.addEventListener('pointerup', e => {
-    if (dragging) {
-      dragging = false;
-      try { element.releasePointerCapture(e.pointerId); } catch(_){}
-      renderPlayers();
+  }
+});
+
+// ──────────────────────────────────────────────────────────
+// LIVE REAL-TIME ANALYSIS DURING DRAG
+// ──────────────────────────────────────────────────────────
+function showLiveDragAnalysis(p) {
+  if (p.team === 'ball') {
+    setStatus('⚽ Ball wird geführt – Passschatten aller Gegner passen sich dynamisch an!');
+    return;
+  }
+
+  if (p.team === 'tsv') {
+    // 1. Offside Check
+    if (isOffside(p)) {
+      setStatus(`⛔ Nr. ${p.num} (${p.role}) steht im ABSEITS! (Hinter der blauen Abseitslinie)`, 'warning');
+      return;
     }
-  });
-  element.addEventListener('pointercancel', () => { dragging = false; });
+
+    // 2. Cover Shadow Check
+    if (isInCoverShadow(p)) {
+      setStatus(`🔺 Nr. ${p.num} (${p.role}) steht im PASSSCHATTEN einer Gegnerin – kein direkter Pass möglich!`, 'warning');
+      return;
+    }
+
+    // 3. Defensive Chain Check (LV / IV / RV)
+    if (p.role === 'LV' || p.role === 'RV' || p.role === 'IV') {
+      const gaps = detectDefensiveGaps();
+      if (gaps.length > 0) {
+        setStatus(`🚨 LÜCKE IN DER KETTE! Abstand ${Math.round(gaps[0].dist/10)}m – Riesiges Loch offen!`, 'warning');
+        return;
+      }
+      if (p.x > 440) {
+        setStatus(`⚠️ ${p.role} steht extrem hoch! Eigener Rückraum ist ungedeckt für Konter!`, 'warning');
+        return;
+      }
+      setStatus(`✅ ${p.role} positioniert – Kette steht kompakt & gesichert.`, 'success');
+      return;
+    }
+
+    // 4. Sechserin (ZDM)
+    if (p.is6) {
+      if (p.x > 480 || p.y < 180 || p.y > 480) {
+        setStatus('⚠️ Die 6 hat ihre zentrale Schaltposition verlassen – Zentrum unbesetzt!', 'warning');
+      } else {
+        setStatus('✅ Die 6 ist zentral anspielbereit – kann aufdrehen & Spiel verlagern!', 'success');
+      }
+      return;
+    }
+
+    // Default attacking
+    setStatus(`✅ Nr. ${p.num} (${p.role}) steht frei – anspielbare Passoption!`, 'success');
+  } else {
+    // Opponent moved
+    setStatus(`Gegnerin Nr. ${p.num} verschoben – Passschatten & Abseitslinie neu berechnet.`);
+  }
 }
 
 // ──────────────────────────────────────────────────────────
@@ -1092,24 +1164,19 @@ function runLiveTacticAnalysis() {
   const gaps = detectDefensiveGaps();
   const p6 = players.find(p => p.id === 'tsv-6');
   const lv = players.find(p => p.id === 'tsv-2');
-  const ball = players.find(p => p.id === 'ball');
 
   const messages = [];
 
-  // 1. Check Gaps
   if (gaps.length > 0) {
     messages.push(`🚨 ${gaps.length} Lücke(n) in der Abwehrkette erkannt (${gaps.map(g=>g.side).join(', ')})!`);
   }
 
-  // 2. Check Center Protection
   if (p6 && (p6.y < 200 || p6.y > 460 || p6.x > 500)) {
     messages.push(`⚠️ Die 6 (ZDM) hat ihre zentrale Schaltposition verlassen!`);
   }
 
-  // 3. Check LV pushed too high
-  if (lv && lv.x > 450) {
+  if (lv && lv.x > 420) {
     messages.push(`⚠️ LV steht extrem hoch (x=${Math.round(lv.x)}) – Kontergefahr über links!`);
-    // Highlight danger area
     const zone = mkEl('rect');
     setAttrs(zone, { x: 120, y: 70, width: 220, height: 180,
       fill: 'rgba(239, 68, 68, 0.25)', stroke: '#ef4444',
@@ -1121,10 +1188,9 @@ function runLiveTacticAnalysis() {
     layerTactics.appendChild(txt);
   }
 
-  // 4. Check Cover Shadow of TSV attackers
   const shadowed = players.filter(p => p.team === 'tsv' && isInCoverShadow(p));
   if (shadowed.length > 0) {
-    messages.push(`🔺 ${shadowed.length} Spielerin(nen) stehen im gegnerischen Passschatten (Nr. ${shadowed.map(s=>s.num).join(', ')})!`);
+    messages.push(`🔺 ${shadowed.length} Spielerin(nen) stehen im Passschatten (Nr. ${shadowed.map(s=>s.num).join(', ')})!`);
   }
 
   if (messages.length === 0) {
@@ -1151,22 +1217,22 @@ function applyPreset(type) {
     setStatus('🟢 BALLBESITZ: Mach dich GROSS! (Breite an der Linie, Raum für die 6)', 'success');
     targets = [
       { id:'tsv-4',  x:170, y:330 },
-      { id:'tsv-2',  x:260, y:80  }, // LV ganz an die Linie
-      { id:'tsv-3',  x:260, y:580 }, // RV ganz an die Linie
-      { id:'tsv-6',  x:340, y:330 }, // 6er zentral anspielbar
-      { id:'tsv-7',  x:510, y:90  }, // LM breit
+      { id:'tsv-2',  x:260, y:80  },
+      { id:'tsv-3',  x:260, y:580 },
+      { id:'tsv-6',  x:340, y:330 },
+      { id:'tsv-7',  x:510, y:90  },
       { id:'tsv-10', x:480, y:330 },
-      { id:'tsv-11', x:510, y:570 }, // RM breit
-      { id:'tsv-9',  x:650, y:330 }, // ST bindet IV
+      { id:'tsv-11', x:510, y:570 },
+      { id:'tsv-9',  x:650, y:330 },
       { id:'ball',   x:185, y:330 }
     ];
   } else if (type === 'compact') {
     setStatus('🔴 BALLVERLUST: Mach dich ENG! (Zentrum verdichten, Kette schließt)', 'warning');
     targets = [
       { id:'tsv-4',  x:210, y:330 },
-      { id:'tsv-2',  x:240, y:230 }, // LV rückt ein!
-      { id:'tsv-3',  x:240, y:430 }, // RV rückt ein!
-      { id:'tsv-6',  x:295, y:330 }, // Vor der Kette sichern
+      { id:'tsv-2',  x:240, y:230 },
+      { id:'tsv-3',  x:240, y:430 },
+      { id:'tsv-6',  x:295, y:330 },
       { id:'tsv-7',  x:370, y:220 },
       { id:'tsv-10', x:380, y:330 },
       { id:'tsv-11', x:370, y:440 },
@@ -1181,12 +1247,11 @@ function applyPreset(type) {
       { id:'tsv-2',  x:160, y:210 },
       { id:'tsv-4',  x:145, y:330 },
       { id:'tsv-3',  x:160, y:450 },
-      { id:'tsv-6',  x:210, y:330 }, // Sechserin direkt vor 16er
-      { id:'tsv-7',  x:220, y:180 }, // LM hilft doppeln
+      { id:'tsv-6',  x:210, y:330 },
+      { id:'tsv-7',  x:220, y:180 },
       { id:'tsv-10', x:250, y:330 },
       { id:'tsv-11', x:220, y:480 },
-      { id:'tsv-9',  x:340, y:330 }, // Konter-Anspielstation
-      // Gegner drücken an unseren 16er
+      { id:'tsv-9',  x:340, y:330 },
       { id:'geg-9',  x:180, y:300 },
       { id:'geg-10', x:240, y:260 },
       { id:'geg-7',  x:210, y:120 },
@@ -1195,18 +1260,18 @@ function applyPreset(type) {
   } else if (type === 'throwinGood') {
     setStatus('📐 EINWURF TSV: RICHTIG! LM löst sich VOR die Gegnerin → Passweg frei!', 'success');
     targets = [
-      { id:'tsv-2',  x:420, y:30  }, // LV führt Einwurf aus
-      { id:'tsv-7',  x:400, y:110 }, // LM vor Gegnerin gelöst
-      { id:'geg-2',  x:430, y:150 }, // RV steht dahinter
-      { id:'tsv-6',  x:350, y:210 }, // 6er als Dreieck
+      { id:'tsv-2',  x:420, y:30  },
+      { id:'tsv-7',  x:400, y:110 },
+      { id:'geg-2',  x:430, y:150 },
+      { id:'tsv-6',  x:350, y:210 },
       { id:'ball',   x:420, y:40  }
     ];
   } else if (type === 'throwinBad') {
     setStatus('⚠️ EINWURF: FALSCH! LM steht HINTER der Gegnerin im Passschatten!', 'warning');
     targets = [
-      { id:'tsv-2',  x:420, y:30  }, // LV führt Einwurf aus
-      { id:'geg-2',  x:420, y:100 }, // RV blockiert direkt die Linie!
-      { id:'tsv-7',  x:420, y:165 }, // LM steht genau dahinter im Schatten
+      { id:'tsv-2',  x:420, y:30  },
+      { id:'geg-2',  x:420, y:100 },
+      { id:'tsv-7',  x:420, y:165 },
       { id:'tsv-6',  x:320, y:240 },
       { id:'ball',   x:420, y:40  }
     ];
@@ -1217,7 +1282,7 @@ function applyPreset(type) {
       { id:'geg-2',  x:410, y:120 },
       { id:'geg-7',  x:430, y:180 },
       { id:'tsv-6',  x:330, y:330 },
-      { id:'tsv-11', x:480, y:560 }, // RM völlig frei rechts!
+      { id:'tsv-11', x:480, y:560 },
       { id:'ball',   x:370, y:120 }
     ];
   }
@@ -1245,9 +1310,7 @@ function simulateOpponentAttackFromCurrent() {
   clearDrawings();
   const gaps = detectDefensiveGaps();
   const lv = players.find(p => p.id === 'tsv-2');
-  const rv = players.find(p => p.id === 'tsv-3');
   const gegST = players.find(p => p.id === 'geg-9');
-  const gegW = players.find(p => p.id === 'geg-7');
 
   if (gaps.length > 0) {
     const targetGap = gaps[0];
@@ -1255,16 +1318,14 @@ function simulateOpponentAttackFromCurrent() {
     const holeY = (targetGap.p1.y + targetGap.p2.y) / 2;
 
     setStatus(`🚨 GEGNER GREIFT DIE LÜCKE AN! Pass direkt in die Schnittstelle ${targetGap.side}!`, 'warning');
-    
-    // Pass into the gap
     drawArrow(gegST ? gegST.x : 540, gegST ? gegST.y : 330, holeX, holeY, '#ef4444', 'arr-red');
+    
     animateTo([
       { id: 'ball', x: holeX, y: holeY },
       { id: 'geg-7', x: holeX - 10, y: holeY }
     ], 800, () => {
       showSpeechBubble('geg-7', '⚡ Frei durch!', 2500);
       setTimeout(() => {
-        // Opponent shoots at goal
         drawArrow(holeX, holeY, 80, 330, '#ef4444', 'arr-red');
         animateTo([{ id: 'ball', x: 85, y: 330 }], 500, () => {
           setStatus('❌ Torchance für den Gegner! Konsequenz der offenen Kette.', 'warning');
@@ -1272,7 +1333,6 @@ function simulateOpponentAttackFromCurrent() {
       }, 1000);
     });
   } else if (lv && lv.x > 380) {
-    // LV out of position
     setStatus('🚨 LV FEHLT HINTEN! Gegner spielt den Ball in ihren leeren Raum!', 'warning');
     const holeX = 180;
     const holeY = 140;
@@ -1284,7 +1344,6 @@ function simulateOpponentAttackFromCurrent() {
       showSpeechBubble('geg-7', 'Danke für den Platz!', 2500);
     });
   } else {
-    // Defense is solid
     setStatus('🛡️ GUTE VERTEIDIGUNG! Kette steht kompakt – Gegner findet keinen Passweg!', 'success');
     drawArrow(540, 330, 480, 330, '#facc15', 'arr-yellow');
     animateTo([{ id: 'ball', x: 480, y: 330 }], 600, () => {
@@ -1302,15 +1361,12 @@ function simulateFind6FromCurrent() {
 
   if (!p6 || !ball) return;
 
-  // Check if 6 is in shadow
   if (isInCoverShadow(p6)) {
     setStatus('⚠️ 6er steht im Deckungsschatten! Sie muss erst einen Schritt raustreten...', 'warning');
-    // Step out of shadow
     animateTo([{ id: 'tsv-6', x: p6.x, y: p6.y - 35 }], 500, () => {
       showSpeechBubble('tsv-6', 'Jetzt frei!', 2000);
       drawArrow(ball.x, ball.y, p6.x, p6.y - 35, '#22c55e', 'arr-green');
       animateTo([{ id: 'ball', x: p6.x, y: p6.y - 35 }], 600, () => {
-        // Shift wide
         const target = (rm && !isInCoverShadow(rm)) ? rm : lm;
         if (target) {
           drawArrow(p6.x, p6.y - 35, target.x, target.y, '#22c55e', 'arr-green');
@@ -1320,7 +1376,6 @@ function simulateFind6FromCurrent() {
       });
     });
   } else {
-    // Direct pass to 6
     setStatus('⬡ Pass zur 6 → Aufdrehen → Verlagerung!', 'success');
     drawArrow(ball.x, ball.y, p6.x, p6.y, '#22c55e', 'arr-green');
     animateTo([{ id: 'ball', x: p6.x, y: p6.y }], 600, () => {
@@ -1364,7 +1419,6 @@ function demoErrorLV() {
     { id:'tsv-2', x:530, y:450 },
     { id:'ball',  x:545, y:450 }
   ], 800, () => {
-    // Opponent exploits
     setTimeout(() => simulateOpponentAttackFromCurrent(), 400);
   });
 }
@@ -1448,7 +1502,6 @@ svg.addEventListener('click', e => {
 
   const target = toSVGPoint(e.clientX, e.clientY);
 
-  // Check if clicking directly on a teammate
   const receiver = players.find(p => {
     return p.team === 'tsv' && p.id !== fpSelected && Math.hypot(p.x - target.x, p.y - target.y) < 24;
   });
@@ -1456,14 +1509,12 @@ svg.addEventListener('click', e => {
   clearDrawings();
 
   if (receiver) {
-    // Check offside
     if (isOffside(receiver)) {
       drawArrow(passer.x, passer.y, receiver.x, receiver.y, '#ef4444', 'arr-red');
       setStatus(`⛔ ABSEITS! Nr.${receiver.num} (${receiver.role}) steht im Abseits!`, 'warning');
       showSpeechBubble(receiver.id, '⛔ Abseits!', 2500);
       return;
     }
-    // Check cover shadow
     if (isInCoverShadow(receiver)) {
       drawArrow(passer.x, passer.y, receiver.x, receiver.y, '#f59e0b', 'arr-yellow');
       setStatus(`⚠️ Riskanter Pass! Nr.${receiver.num} stand im Deckungsschatten!`, 'warning');
@@ -1473,12 +1524,10 @@ svg.addEventListener('click', e => {
       setStatus(`✅ Sauberer Pass zu Nr.${receiver.num} (${receiver.role})!`, 'success');
       showSpeechBubble(receiver.id, 'Danke!', 2000);
     }
-    // Move ball
     animateTo([{ id: 'ball', x: receiver.x + 12, y: receiver.y }], 500);
     fpSelected = receiver.id;
     renderPlayers();
   } else {
-    // Pass to space
     if (showOffside && target.x > getOffsideX() && target.x > 500) {
       drawArrow(passer.x, passer.y, target.x, target.y, '#ef4444', 'arr-red');
       setStatus('⛔ Pass in die Abseitszone!', 'warning');
@@ -1523,7 +1572,6 @@ svg.addEventListener('pointerdown', e => {
     });
     layerDrawings.appendChild(currentPathEl);
   } else {
-    // Line with arrow
     currentPathEl = mkEl('line');
     setAttrs(currentPathEl, {
       x1: drawStartPoint.x, y1: drawStartPoint.y,
@@ -1538,7 +1586,7 @@ svg.addEventListener('pointerdown', e => {
 });
 
 svg.addEventListener('pointermove', e => {
-  if (!isDrawing || !currentPathEl) return;
+  if (!isDrawing || !currentPathEl || activeTab !== 'draw') return;
   const pt = toSVGPoint(e.clientX, e.clientY);
   if (currentDrawTool === 'pen') {
     const d = currentPathEl.getAttribute('d') + ` L ${pt.x} ${pt.y}`;
@@ -1569,22 +1617,22 @@ function undoLastDrawing() {
 function toggleZones() {
   showZones = !showZones;
   document.getElementById('btn-zones').classList.toggle('active-toggle', showZones);
-  renderPlayers();
+  updateTacticalOverlays();
 }
 function toggleOffside() {
   showOffside = !showOffside;
   document.getElementById('btn-offside').classList.toggle('active-toggle', showOffside);
-  renderPlayers();
+  updateTacticalOverlays();
 }
 function toggleCones() {
   showCones = !showCones;
   document.getElementById('btn-cones').classList.toggle('active-toggle', showCones);
-  renderPlayers();
+  updateTacticalOverlays();
 }
 function toggleGaps() {
   showGaps = !showGaps;
   document.getElementById('btn-gaps').classList.toggle('active-toggle', showGaps);
-  renderPlayers();
+  updateTacticalOverlays();
 }
 function toggleCorridors() {
   showCorridors = !showCorridors;
@@ -1651,7 +1699,7 @@ function setFormation(fmt) {
 }
 
 // ──────────────────────────────────────────────────────────
-// ANIMATION ENGINE
+// ANIMATION ENGINE (SMOOTH TRANSFORMS WITHOUT DOM WIPES)
 // ──────────────────────────────────────────────────────────
 function animateTo(targetCoords, duration = 800, onDone) {
   const t0 = performance.now();
@@ -1664,13 +1712,16 @@ function animateTo(targetCoords, duration = 800, onDone) {
       if (tgt) {
         p.x = starts[i].x + (tgt.x - starts[i].x) * ease;
         p.y = starts[i].y + (tgt.y - starts[i].y) * ease;
+        const g = document.getElementById(p.id);
+        if (g) g.setAttribute('transform', `translate(${p.x},${p.y})`);
       }
     });
-    renderPlayers();
+    updateTacticalOverlays();
     if (prog < 1) {
       requestAnimationFrame(step);
-    } else if (onDone) {
-      onDone();
+    } else {
+      renderPlayers();
+      if (onDone) onDone();
     }
   }
   requestAnimationFrame(step);
@@ -1702,6 +1753,7 @@ function showSpeechBubble(playerId, text, duration = 3000) {
   if (!p) return;
   const g = mkEl('g');
   g.setAttribute('transform', `translate(${p.x},${p.y - 36})`);
+  g.setAttribute('pointer-events', 'none');
   const w = Math.max(76, text.length * 6.5);
   g.innerHTML = `
     <rect x="${-w/2}" y="-20" width="${w}" height="20" rx="7" fill="#facc15" stroke="#111" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.5))"/>
@@ -1717,7 +1769,8 @@ function drawArrow(x1, y1, x2, y2, color, markerId) {
     x1, y1, x2, y2,
     stroke: color, 'stroke-width': 3,
     'stroke-dasharray': '8 5',
-    'marker-end': `url(#${markerId})`
+    'marker-end': `url(#${markerId})`,
+    'pointer-events': 'none'
   });
   layerTactics.appendChild(line);
 }

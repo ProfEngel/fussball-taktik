@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tsv-taktik-v3';
+const CACHE_NAME = 'tsv-taktik-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -32,7 +32,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Return cached asset immediately, but revalidate in background when online
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
