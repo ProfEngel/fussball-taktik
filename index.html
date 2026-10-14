@@ -1055,6 +1055,10 @@ let fpSelected      = null;
 // Global Drag State
 let activeDrag = null;
 
+// Simulation & Animation Lifecycle State
+let currentAnimFrame   = null;
+let activeSimTimeouts  = [];
+
 // Drawing tool state
 let currentDrawTool  = 'pen';
 let currentDrawColor = '#facc15';
@@ -1702,6 +1706,7 @@ function showLiveDragAnalysis(p) {
 // TAKTIK-PRESETS
 // ──────────────────────────────────────────────────────────
 function applyPreset(type) {
+  stopAllSimulations();
   clearDrawings();
   let targets = [];
 
@@ -1825,7 +1830,13 @@ function applyPreset(type) {
     ];
   }
 
-  animateTo(targets, 800, () => {
+  // Merge targets with initialPlayers so any player not involved in the preset returns to home
+  const completeTargets = initialPlayers.map(init => {
+    const custom = targets.find(t => t.id === init.id);
+    return custom ? custom : { id: init.id, x: init.x, y: init.y };
+  });
+
+  animateTo(completeTargets, 800, () => {
     if (type === 'throwinGood') {
       drawArrow(420, 40, 400, 110, '#22c55e', 'arr-green');
       showSpeechBubble('tsv-7', 'Vorne frei!', 2500);
@@ -1844,149 +1855,215 @@ function applyPreset(type) {
 }
 
 // ──────────────────────────────────────────────────────────
-// LIVE-SIMULATIONEN
+// LIVE-SIMULATIONEN (BEST VS. WORST CASE)
 // ──────────────────────────────────────────────────────────
-function simFind6Best() {
-  clearDrawings();
-  setStatus('🟢 SZENARIO 1 (BEST): Pass zur 6 → Schulterblick & Aufdrehen → Freier Flügel!', 'success');
-  animateTo([
-    { id:'tsv-4',  x:180, y:330 },
-    { id:'tsv-6',  x:340, y:330 },
-    { id:'ball',   x:185, y:330 }
-  ], 600, () => {
-    drawArrow(180, 330, 340, 330, '#22c55e', 'arr-green');
-    showSpeechBubble('tsv-6', 'Du hast Zeit! Dreh auf!', 2000);
-    setTimeout(() => {
-      clearDrawings();
-      animateTo([
-        { id:'ball',   x:335, y:330 },
-        { id:'tsv-11', x:510, y:570 }
-      ], 600, () => {
-        drawArrow(340, 330, 510, 570, '#22c55e', 'arr-green');
-        animateTo([{ id:'ball', x:500, y:560 }], 700);
-        showSpeechBubble('tsv-11', 'Danke! Tempo!', 2500);
-      });
-    }, 1000);
-  });
-}
 
-function simFind6Worst() {
-  clearDrawings();
-  setStatus('🔴 SZENARIO 1 (WORST): 6er im Schatten / Blinder Pass → Gegner fängt ab & schließt ab!', 'warning');
-  animateTo([
-    { id:'tsv-4',  x:180, y:330 },
-    { id:'geg-6',  x:280, y:330 },
-    { id:'tsv-6',  x:340, y:330 },
-    { id:'ball',   x:185, y:330 }
-  ], 600, () => {
-    drawArrow(180, 330, 280, 330, '#ef4444', 'arr-red');
+// SZENARIO 1: DIE 6 SUCHEN
+function simFind6Best() {
+  runSimulationWithReset('🟢 SZENARIO 1 (BEST): Pass zur 6 → Schulterblick & Aufdrehen → Freier Flügel!', 'success', () => {
+    const ball = players.find(p => p.id === 'ball');
+    if (ball) { ball.x = 185; ball.y = 330; }
+    renderPlayers();
+
     animateTo([
-      { id:'ball',  x:280, y:330 },
-      { id:'geg-6', x:270, y:330 }
-    ], 600, () => {
-      showSpeechBubble('geg-6', 'Abgefangen!', 2000);
-      setTimeout(() => {
-        drawArrow(270, 330, 80, 330, '#ef4444', 'arr-red');
-        animateTo([{ id:'ball', x:85, y:330 }], 600);
-        setStatus('❌ Tor für den Gegner durch Ballverlust im Zentrum!', 'warning');
-      }, 800);
+      { id:'tsv-4',  x:180, y:330 },
+      { id:'tsv-6',  x:340, y:330 },
+      { id:'ball',   x:185, y:330 }
+    ], 300, () => {
+      drawArrow(180, 330, 340, 330, '#22c55e', 'arr-green');
+      showSpeechBubble('tsv-6', 'Du hast Zeit! Dreh auf!', 2000);
+      animateTo([{ id:'ball', x:335, y:330 }], 500, () => {
+        simTimeout(() => {
+          clearDrawings();
+          drawArrow(340, 330, 510, 570, '#22c55e', 'arr-green');
+          animateTo([
+            { id:'ball',   x:500, y:560 },
+            { id:'tsv-11', x:510, y:570 }
+          ], 700, () => {
+            showSpeechBubble('tsv-11', 'Danke! Tempo!', 2500);
+          });
+        }, 800);
+      });
     });
   });
 }
 
+function simFind6Worst() {
+  runSimulationWithReset('🔴 SZENARIO 1 (WORST): 6er im Schatten / Blinder Pass → Gegner fängt ab & schließt ab!', 'warning', () => {
+    const ball = players.find(p => p.id === 'ball');
+    if (ball) { ball.x = 185; ball.y = 330; }
+    renderPlayers();
+
+    animateTo([
+      { id:'tsv-4',  x:180, y:330 },
+      { id:'geg-6',  x:280, y:330 },
+      { id:'tsv-6',  x:340, y:330 },
+      { id:'ball',   x:185, y:330 }
+    ], 500, () => {
+      drawArrow(180, 330, 280, 330, '#ef4444', 'arr-red');
+      animateTo([
+        { id:'ball',  x:280, y:330 },
+        { id:'geg-6', x:270, y:330 }
+      ], 500, () => {
+        showSpeechBubble('geg-6', 'Abgefangen!', 2000);
+        simTimeout(() => {
+          drawArrow(270, 330, 80, 330, '#ef4444', 'arr-red');
+          animateTo([{ id:'ball', x:85, y:330 }], 600, () => {
+            setStatus('❌ Tor für den Gegner durch Ballverlust im Zentrum!', 'warning');
+          });
+        }, 800);
+      });
+    });
+  });
+}
+
+// SZENARIO 2: FLÜGELANGRIFF & FLANKE
 function simWingAttackBest() {
-  clearDrawings();
-  setStatus('🟢 SZENARIO 2 (BEST): Flanke auf den 1. Pfosten, Stürmerin kreuzt, Tor!', 'success');
-  animateTo([
-    { id:'tsv-7',  x:810, y:90  },
-    { id:'tsv-9',  x:880, y:280 },
-    { id:'tsv-10', x:770, y:330 },
-    { id:'ball',   x:800, y:95  }
-  ], 600, () => {
-    drawArrow(800, 95, 880, 280, '#22c55e', 'arr-green');
-    animateTo([{ id:'ball', x:880, y:280 }], 600, () => {
-      showSpeechBubble('tsv-9', 'Direktabnahme! Tor! 🎉', 2500);
-      drawArrow(880, 280, 950, 310, '#22c55e', 'arr-green');
-      animateTo([{ id:'ball', x:950, y:310 }], 400);
+  runSimulationWithReset('🟢 SZENARIO 2 (BEST): Flanke auf den 1. Pfosten, Stürmerin kreuzt, Tor!', 'success', () => {
+    animateTo([
+      { id:'tsv-7',  x:810, y:90  },
+      { id:'tsv-9',  x:760, y:280 },
+      { id:'tsv-10', x:680, y:330 },
+      { id:'tsv-11', x:750, y:430 },
+      { id:'tsv-6',  x:580, y:330 },
+      { id:'ball',   x:800, y:95  },
+      { id:'geg-1',  x:920, y:330 },
+      { id:'geg-4',  x:850, y:330 },
+      { id:'geg-2',  x:840, y:220 },
+      { id:'geg-3',  x:840, y:440 }
+    ], 600, () => {
+      drawArrow(800, 95, 880, 280, '#22c55e', 'arr-green');
+      animateTo([
+        { id:'ball',   x:880, y:280 },
+        { id:'tsv-9',  x:880, y:280 },
+        { id:'tsv-11', x:890, y:380 },
+        { id:'tsv-10', x:770, y:330 }
+      ], 600, () => {
+        showSpeechBubble('tsv-9', 'Direktabnahme! Tor! 🎉', 2500);
+        drawArrow(880, 280, 950, 310, '#22c55e', 'arr-green');
+        animateTo([{ id:'ball', x:950, y:310 }], 400);
+      });
     });
   });
 }
 
 function simWingAttackWorst() {
-  clearDrawings();
-  setStatus('🔴 SZENARIO 2 (WORST): Alle laufen blind zur TW → Ball fliegt ins Nichts & Konter!', 'warning');
-  animateTo([
-    { id:'tsv-7',  x:810, y:90  },
-    { id:'tsv-9',  x:920, y:310 },
-    { id:'tsv-10', x:920, y:330 },
-    { id:'tsv-11', x:920, y:350 },
-    { id:'ball',   x:800, y:95  }
-  ], 600, () => {
-    drawArrow(800, 95, 915, 330, '#ef4444', 'arr-red');
-    animateTo([{ id:'ball', x:920, y:330 }], 600, () => {
-      showSpeechBubble('geg-1', 'Leichte Beute!', 2000);
-      setTimeout(() => {
-        drawArrow(920, 330, 500, 330, '#ef4444', 'arr-red');
-        animateTo([{ id:'ball', x:500, y:330 }, { id:'geg-9', x:490, y:330 }], 700);
-        setStatus('❌ Schneller Gegenkonter, weil der Rückraum unbesetzt war!', 'warning');
+  runSimulationWithReset('🔴 SZENARIO 2 (WORST): Alle laufen blind zur TW → Ball fliegt ins Nichts & Konter!', 'warning', () => {
+    animateTo([
+      { id:'tsv-7',  x:810, y:90  },
+      { id:'tsv-9',  x:760, y:280 },
+      { id:'tsv-10', x:680, y:330 },
+      { id:'tsv-11', x:750, y:430 },
+      { id:'tsv-6',  x:580, y:330 },
+      { id:'ball',   x:800, y:95  },
+      { id:'geg-1',  x:920, y:330 },
+      { id:'geg-4',  x:850, y:330 },
+      { id:'geg-9',  x:500, y:330 }
+    ], 600, () => {
+      drawArrow(800, 95, 915, 330, '#ef4444', 'arr-red');
+      animateTo([
+        { id:'tsv-9',  x:920, y:310 },
+        { id:'tsv-10', x:920, y:330 },
+        { id:'tsv-11', x:920, y:350 },
+        { id:'ball',   x:920, y:330 }
+      ], 600, () => {
+        showSpeechBubble('geg-1', 'Leichte Beute!', 2000);
+        simTimeout(() => {
+          drawArrow(920, 330, 500, 330, '#ef4444', 'arr-red');
+          animateTo([
+            { id:'ball',  x:500, y:330 },
+            { id:'geg-9', x:490, y:330 }
+          ], 700, () => {
+            setStatus('❌ Schneller Gegenkonter, weil der Rückraum unbesetzt war!', 'warning');
+          });
+        }, 800);
+      });
+    });
+  });
+}
+
+// SZENARIO 3: EINWURF
+function simThrowinBest() {
+  runSimulationWithReset('🟢 BEST CASE EINWURF: LM löst sich VOR die Gegnerin in die Schnittstelle!', 'success', () => {
+    applyPreset('throwinGood');
+  });
+}
+
+function simThrowinWorst() {
+  runSimulationWithReset('🔴 WORST CASE EINWURF: LM versteckt sich HINTER der Gegnerin im Schatten!', 'warning', () => {
+    applyPreset('throwinBad');
+  });
+}
+
+// SZENARIO 4: RESTVERTEIDIGUNG
+function simRestDefenseBest() {
+  runSimulationWithReset('🟢 SZENARIO 4 (BEST): LV sichert den Flügel ab → Konterpass wird souverän abgelaufen!', 'success', () => {
+    animateTo([
+      { id:'tsv-2', x:250, y:160 },
+      { id:'tsv-4', x:200, y:330 },
+      { id:'tsv-3', x:220, y:510 },
+      { id:'geg-7', x:320, y:150 },
+      { id:'ball',  x:330, y:150 }
+    ], 600, () => {
+      showSpeechBubble('tsv-2', 'Abgelaufen! Nach außen abdrängen!', 2500);
+    });
+  });
+}
+
+function simRestDefenseWorst() {
+  runSimulationWithReset('🔴 SZENARIO 4 (WORST): LV stürmt blind vor → Riesiges Loch hinten links!', 'warning', () => {
+    demoErrorLV();
+  });
+}
+
+// SZENARIO 5: BOX-VERTEIDIGUNG
+function simBoxDefenseBest() {
+  runSimulationWithReset('🟢 SZENARIO 5 (BEST): Kompakte Box, Doppeln auf Außen, Zentrum dicht!', 'success', () => {
+    applyPreset('defenseBest');
+  });
+}
+
+function simBoxDefenseWorst() {
+  runSimulationWithReset('🔴 SZENARIO 5 (WORST): IV lässt sich zur Eckfahne locken → Scheunentor vor Tor!', 'warning', () => {
+    applyPreset('defenseWorst');
+  });
+}
+
+// SZENARIO 6: GEGENPRESSING
+function simCounterPressBest() {
+  runSimulationWithReset('🟢 SZENARIO 6 (BEST): 3-Sekunden-Gegenpressing! Sofort zu dritt jagen → Ballgewinn!', 'success', () => {
+    animateTo([
+      { id:'geg-10', x:430, y:330 },
+      { id:'ball',   x:425, y:330 },
+      { id:'tsv-6',  x:400, y:310 },
+      { id:'tsv-10', x:450, y:310 },
+      { id:'tsv-9',  x:430, y:360 }
+    ], 600, () => {
+      showSpeechBubble('tsv-6', 'Druck! Doppel!', 2000);
+      simTimeout(() => {
+        animateTo([{ id:'ball', x:400, y:310 }], 400, () => {
+          setStatus('✅ Ball direkt in der gegnerischen Hälfte zurückerobert!', 'success');
+        });
       }, 800);
     });
   });
 }
 
-function simThrowinBest()  { applyPreset('throwinGood'); }
-function simThrowinWorst() { applyPreset('throwinBad'); }
-
-function simRestDefenseBest() {
-  clearDrawings();
-  setStatus('🟢 SZENARIO 4 (BEST): LV sichert den Flügel ab → Konterpass wird souverän abgelaufen!', 'success');
-  animateTo([
-    { id:'tsv-2', x:250, y:160 },
-    { id:'tsv-4', x:200, y:330 },
-    { id:'geg-7', x:320, y:150 },
-    { id:'ball',  x:330, y:150 }
-  ], 600, () => {
-    showSpeechBubble('tsv-2', 'Abgelaufen! Nach außen abdrängen!', 2500);
-  });
-}
-
-function simRestDefenseWorst() { demoErrorLV(); }
-function simBoxDefenseBest()  { applyPreset('defenseBest'); }
-function simBoxDefenseWorst() { applyPreset('defenseWorst'); }
-
-function simCounterPressBest() {
-  clearDrawings();
-  setStatus('🟢 SZENARIO 6 (BEST): 3-Sekunden-Gegenpressing! Sofort zu dritt jagen → Ballgewinn!', 'success');
-  animateTo([
-    { id:'geg-10', x:430, y:330 },
-    { id:'ball',   x:425, y:330 },
-    { id:'tsv-6',  x:400, y:310 },
-    { id:'tsv-10', x:450, y:310 },
-    { id:'tsv-9',  x:430, y:360 }
-  ], 600, () => {
-    showSpeechBubble('tsv-6', 'Druck! Doppel!', 2000);
-    setTimeout(() => {
-      animateTo([{ id:'ball', x:400, y:310 }], 400);
-      setStatus('✅ Ball direkt in der gegnerischen Hälfte zurückerobert!', 'success');
-    }, 800);
-  });
-}
-
 function simCounterPressWorst() {
-  clearDrawings();
-  setStatus('🔴 SZENARIO 6 (WORST): Stehenbleiben nach Ballverlust → Gegner spielt freien Steilpass!', 'warning');
-  animateTo([
-    { id:'geg-10', x:420, y:330 },
-    { id:'ball',   x:415, y:330 },
-    { id:'tsv-6',  x:340, y:380 },
-    { id:'tsv-10', x:460, y:260 }
-  ], 600, () => {
-    drawArrow(420, 330, 200, 180, '#ef4444', 'arr-red');
+  runSimulationWithReset('🔴 SZENARIO 6 (WORST): Stehenbleiben nach Ballverlust → Gegner spielt freien Steilpass!', 'warning', () => {
     animateTo([
-      { id:'ball',  x:200, y:180 },
-      { id:'geg-7', x:190, y:180 }
-    ], 800, () => {
-      showSpeechBubble('geg-7', 'Danke für die Zeit!', 2500);
+      { id:'geg-10', x:420, y:330 },
+      { id:'ball',   x:415, y:330 },
+      { id:'tsv-6',  x:340, y:380 },
+      { id:'tsv-10', x:460, y:260 }
+    ], 600, () => {
+      drawArrow(420, 330, 200, 180, '#ef4444', 'arr-red');
+      animateTo([
+        { id:'ball',  x:200, y:180 },
+        { id:'geg-7', x:190, y:180 }
+      ], 800, () => {
+        showSpeechBubble('geg-7', 'Danke für die Zeit!', 2500);
+      });
     });
   });
 }
@@ -2066,13 +2143,13 @@ function simulateOpponentAttackFromCurrent() {
 }
 
 function demoErrorLV() {
-  clearDrawings();
-  setStatus('⚠️ LV stürmt blind vor → Riesiges Loch hinten links!', 'warning');
-  animateTo([
-    { id:'tsv-2', x:530, y:450 },
-    { id:'ball',  x:545, y:450 }
-  ], 800, () => {
-    setTimeout(() => simulateOpponentAttackFromCurrent(), 400);
+  runSimulationWithReset('⚠️ LV stürmt blind vor → Riesiges Loch hinten links!', 'warning', () => {
+    animateTo([
+      { id:'tsv-2', x:530, y:450 },
+      { id:'ball',  x:545, y:450 }
+    ], 800, () => {
+      simTimeout(() => simulateOpponentAttackFromCurrent(), 400);
+    });
   });
 }
 
@@ -2436,9 +2513,32 @@ function setFormation(fmt) {
 }
 
 // ──────────────────────────────────────────────────────────
-// ANIMATION ENGINE
+// ANIMATION ENGINE & SIMULATION LIFECYCLE
 // ──────────────────────────────────────────────────────────
+function stopAllSimulations() {
+  if (currentAnimFrame) {
+    cancelAnimationFrame(currentAnimFrame);
+    currentAnimFrame = null;
+  }
+  activeSimTimeouts.forEach(t => clearTimeout(t));
+  activeSimTimeouts = [];
+  clearDrawings();
+}
+
+function simTimeout(fn, delay) {
+  const id = setTimeout(() => {
+    activeSimTimeouts = activeSimTimeouts.filter(t => t !== id);
+    fn();
+  }, delay);
+  activeSimTimeouts.push(id);
+  return id;
+}
+
 function animateTo(targetCoords, duration = 800, onDone) {
+  if (currentAnimFrame) {
+    cancelAnimationFrame(currentAnimFrame);
+    currentAnimFrame = null;
+  }
   const t0 = performance.now();
   const starts = players.map(p => ({ x: p.x, y: p.y }));
   function step(now) {
@@ -2455,13 +2555,39 @@ function animateTo(targetCoords, duration = 800, onDone) {
     });
     updateTacticalOverlays();
     if (prog < 1) {
-      requestAnimationFrame(step);
+      currentAnimFrame = requestAnimationFrame(step);
     } else {
+      currentAnimFrame = null;
       renderPlayers();
       if (onDone) onDone();
     }
   }
-  requestAnimationFrame(step);
+  currentAnimFrame = requestAnimationFrame(step);
+}
+
+function runSimulationWithReset(statusText, statusType, runFn) {
+  stopAllSimulations();
+
+  const isScattered = players.some(p => {
+    const init = initialPlayers.find(i => i.id === p.id);
+    return init && Math.hypot(p.x - init.x, p.y - init.y) > 15;
+  });
+
+  if (isScattered) {
+    setStatus('⏱️ Grundposition einnehmen...', '');
+    const resetTargets = initialPlayers.map(p => ({ id: p.id, x: p.x, y: p.y }));
+    animateTo(resetTargets, 400, () => {
+      simTimeout(() => {
+        setStatus(statusText, statusType);
+        runFn();
+      }, 250);
+    });
+  } else {
+    players = JSON.parse(JSON.stringify(initialPlayers));
+    renderPlayers();
+    setStatus(statusText, statusType);
+    simTimeout(runFn, 100);
+  }
 }
 
 // ──────────────────────────────────────────────────────────
@@ -2526,6 +2652,7 @@ function clearAllPitch() {
 }
 
 function resetToInitial() {
+  stopAllSimulations();
   players = JSON.parse(JSON.stringify(initialPlayers));
   clearDrawings();
   renderPlayers();
