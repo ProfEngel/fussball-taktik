@@ -8,49 +8,68 @@
 
 ---
 
-## 🎯 Wofür ist diese Taktiktafel gedacht?
+## 🎯 Zwei zielgruppenspezifische Modi (1-Klick-Umschaltung)
 
-Diese Web-App wurde speziell für das Training, die Mannschaftsbesprechung und das Coaching an der Seitenlinie im **Juniorinnen-Fußball (TSV Plattenhardt)** entwickelt. Sie verbindet intuitive Bedienung auf dem iPad/Tablet mit modernen Konzepten der professionellen Fußballanalyse (bekannt aus Tools wie *TacticalPad* und *KlipDraw*).
+Ganz oben im Kopfbereich kann zwischen zwei Betriebsmodi umgeschaltet werden:
+
+1. **👧 Für Fußballerinnen (Juniorinnen / Kids):**
+   - Große, übersichtliche Bedienelemente in kindgerechter Sprache.
+   - Die 2 goldenen Regeln: **„Mach dich GROSS!"** (Ballbesitz) & **„Mach dich ENG!"** (Ballverlust) als anschauliche Animationen.
+   - Wichtigste Zurufe auf dem Platz: *„LEO!"*, *„Du hast Zeit!"*, *„Gegner im Rücken!"*, *„Schulterblick!"*.
+   - Abseits-Versteher und Freispiel-Quiz.
+
+2. **📋 Trainer-Modus (Vollversion für Taktik & Coaching):**
+   - Gegenüberstellung aller Spielsituationen in **🟢 Ideallösung (Best Case)** vs. **🔴 Typischer Fehler (Worst Case)**.
+   - Vollständige Taktik-Tafel und interaktive Live-Simulationen.
+   - Telestration & Zeichentools sowie DFB 5-Korridore (Halbräume).
 
 ---
 
 ## 🚀 Die Kern-Funktionen im Überblick
 
-### 1. 📋 Reiner Taktik-Modus mit 1-Click-Ausgangslagen (Presets)
-Schnelle Umschaltung typischer Spielsituationen für die Taktikschulung:
-- **🏟️ Grundordnung (3-1-3-1):** Das bewährte TSV-Basissystem für die D-Jugend (9er-Feld).
-- **🟢 Ballbesitz: Groß machen!** Außenverteidigerinnen ganz an die Auslinie, Tiefe schaffen, Räume für die 6 öffnen.
-- **🔴 Ballverlust: Eng machen!** Kette rückt ein, Zentrum schließen, sofortige Ballorientierung.
-- **🛡️ Gegner im Strafraum (Tief stehend):** Kompakter Defensivblock um den 16er, Flankensicherung & Doppelung auf den Außen.
-- **📐 Einwurf TSV (Richtig vs. Falsch):**
-  - *Richtig:* Anspielstation löst sich aktiv **vor** die Gegenspielerin oder in die Schnittstelle.
-  - *Falsch:* Spielerin versteckt sich **hinter** der Gegnerin im Passschatten → Ball wird abgefangen.
-- **↔️ Spielverlagerung über die 6:** Ball auf einer Seite festgerannt → Rückpass zur Schaltzentrale (Nr. 6) → weiter Pass auf die freie Außenbahn.
+### 1. 🔵 Die 3 dynamischen Abseits-Linien
+Auf dem Spielfeld werden 3 separate, dynamische Referenzlinien angezeigt:
+- **1. Blaue Linie (Gegnerische Abseitslinie):** Liegt exakt beim vorletzten gegnerischen Verteidiger vor dem gegnerischen Tor. Die gesamte Abseitszone dahinter ist schattiert.
+- **2. Gelbe / Rote Linie (Stürmer-Referenz):** Folgt unserer vordersten Angreiferin (Nr. 9) und zeigt sofort an:  
+  * `✅ STÜRMERIN REGULÄR` (wenn sie vor der Abseitslinie steht) oder  
+  * `⛔ STÜRMERIN IM ABSEITS (X m)` (wenn sie hinter der Abseitslinie steht).
+- **3. Grüne Linie (Eigene Kettenhöhe):** Liegt bei unserer letzten Verteidigerin vor dem TSV-Tor und visualisiert, wie hoch unsere Kette steht und wo gegnerische Stürmer ins Abseits laufen.
 
-### 2. ⚡ Freie manuelle Positionierung & Simulation ab aktuellem Stand
-- **Jede Spielerin und der Ball können frei per Finger/Maus verschoben werden.**
-- **Didaktischer Clou für Trainer:** Verschiebe z. B. die Linksverteidigerin (LV) mitten ins Feld. Klicke dann auf **„🚨 Gegner-Angriff ab aktuellem Stand simulieren"**:
-  - Die Simulation erkennt *die reale Lücke auf der Tafel*.
-  - Der Gegner spielt den Pass gezielt in den verlassenen Raum und schließt ab!
-  - Perfekt, um Spielerinnen die Konsequenzen von Fehlstellungen direkt vor Augen zu führen.
-- **„⬡ Spielaufbau über die 6":** Reagiert dynamisch auf die aktuelle Position der 6 – muss sie erst aus dem Schatten treten, macht sie den Schritt zur Seite und verlagert dann.
+---
 
-### 3. 🔺 Moderne Taktikanalyse: Passschatten (Cover Shadow) & Lückenerkennung
-- **Echter ballbezogener Passschatten:** Jeder verteidigende Gegner wirft in Echtzeit einen Deckungskegel *vom Ball weg*. Befindet sich eine Mitspielerin in diesem Schatten, ist der direkte Passweg versperrt!
-- **⚠️ Automatische Ketten-Lückenerkennung:** Wenn der Abstand zwischen zwei Abwehrspielerinnen zu groß wird (> 17m), warnt die Tafel automatisch mit einer blinkenden Gefahrenmarkierung.
-- **🔵 Automatische Abseits-Linie:** Berechnet dynamisch den vorletzten Verteidiger und schattiert die Abseitszone.
+### 2. ⚖️ Gegenüberstellung: Ideallösung vs. Typischer Fehler
 
-### 4. 🎮 Freispiel-Modus (Interaktive Passprüfung)
-- Tippe die ballführende Spielerin an → tippe das gewünschte Passziel an.
-- Die App bewertet den Pass sofort:
-  - **✅ Grün:** Freie Spielerin, Pass kommt sicher an.
-  - **⚠️ Gelb:** Spielerin steht im gegnerischen Passschatten (Riskant!).
-  - **⛔ Rot:** Abseits oder geblockt – Pass wird abgewehrt.
+Sowohl in der **Taktik-Tafel** als auch in der **Live-Simulation** sind die wichtigsten Spielsituationen mit Best- & Worst-Case nebeneinander aufgereiht:
+
+| Situation | 🟢 Best Case (Ideallösung) | 🔴 Worst Case (Typischer Fehler) |
+|---|---|---|
+| **1. Spielaufbau über die 6** | Pass zur 6, Schulterblick & Aufdrehen, weiter Pass auf die freie Gegenseite | 6 versteckt sich im Schatten / IV spielt blinden Risikopass durchs Zentrum → Ballverlust & Gegentor |
+| **2. Breite (Weit machen)** | Perfekt aufgefächert: AV an der Außenlinie, ST bindet IV, Raum für die 6 | Alle rennen zum Ball, kleben aufeinander, kein Passweg frei |
+| **3. Kompaktheit (Eng machen)** | Kompakter Block: Kette rückt ein, Zentrum dicht, gegenseitiges Helfen | Kette zerrissen: Eine schläft hinten (hebt Abseits auf), Scheunentor im Zentrum |
+| **4. Einwurf an der Linie** | LM löst sich mit Tempo **vor** die Gegnerin in die Schnittstelle → Ball gesichert | LM versteckt sich **hinter** der Gegnerin im Passschatten → abgefangen & Konter |
+| **5. Flügelangriff & Flanke** | 1. Pfosten kreuzen, 2. Pfosten besetzen, Rückraum an Kante 16er → Tor! | Alle rennen blind auf einen Haufen zur Torhüterin, Rückraum leer für Gegenkonter |
+| **6. Verteidigen am 16er** | Kompakte Box, Doppeln auf Außen, Zentrum vor Tor gesichert | IV stürzt blind an die Eckfahne → Lücke direkt vorm Tor frei |
+| **7. Umschalten nach Ballverlust** | 3-Sekunden-Gegenpressing: Zu dritt jagen → Ball direkt zurückgewonnen | Kopf hängen lassen & Zuschauen → Gegner spielt freien Steilpass |
+
+---
+
+### 3. ⚡ Simulation ab individueller manueller Fehlstellung
+- Verschiebe z. B. die Linksverteidigerin (LV Nr. 2) von Hand an eine falsche Position.
+- Klicke auf **„🚨 Gegner-Angriff ab aktuellem Stand simulieren!"**:
+  - Die Simulation erkennt *die reale Lücke auf der Tafel*, schlägt den Pass in den verwaisten Raum und spielt den Konter bis zum Torschuss durch.
+
+---
+
+### 4. 🔺 Moderner Passschatten (Cover Shadow)
+- Jeder gegnerische Verteidiger wirft einen dynamischen Deckungskegel *vom Ball weg*.
+- Spielerinnen, die im Schatten stehen, werden sofort als nicht anspielbar markiert.
+
+---
 
 ### 5. 🎨 Zeichen- & Telestration-Tools
-- **Freihand-Stift** (Gelb, Weiß, Rot) zum Einkreisen und Notieren.
+- **Freihand-Stift** (Gelb, Weiß, Rot).
 - **Pass-Pfeile** (gestrichelt) und **Laufweg-Pfeile** (durchgezogen).
-- **📊 5 Korridore (DFB-Standard):** Blendet Flügel, Halbräume und Zentrum ein (nach Pep Guardiola / modernem Positionsspiel).
+- **📊 5 Korridore:** Flügel links, Halbraum links, Zentrum, Halbraum rechts, Flügel rechts einblendbar.
 
 ---
 
@@ -61,29 +80,16 @@ Die Taktiktafel ist als **Progressive Web App (PWA)** gebaut und benötigt dank 
 ### 🍎 Auf dem iPad / iPhone (Safari):
 1. Öffne die Seite in **Safari**: [https://profengel.github.io/fussball-taktik/](https://profengel.github.io/fussball-taktik/)
 2. Tippe auf das **Teilen-Symbol** (Viereck mit Pfeil nach oben).
-3. Wähle **„Zum Home-Bildschirm"**.
-4. Tippe auf **„Hinzufügen"**.
-5. ✅ Die App startet ab sofort ohne Browser-Leiste im Vollbild (Querformat) und funktioniert komplett **offline**.
+3. Wähle **„Zum Home-Bildschirm"** → **„Hinzufügen"**.
+4. ✅ Die App startet ab sofort im Vollbild ohne Browserleiste und funktioniert komplett **offline**.
 
 ### 🤖 Auf Android (Chrome):
 1. Öffne die Seite in **Chrome**: [https://profengel.github.io/fussball-taktik/](https://profengel.github.io/fussball-taktik/)
-2. Tippe auf das Banner **„App installieren"** oder oben rechts im Menü (⋮) auf **„App installieren"**.
-3. ✅ Startet als eigenständige Vollbild-App und ist sofort offline-fähig.
+2. Menü (⋮) → **„App installieren"**.
 
 ---
 
-## 💻 Lokale Entwicklung
-
-Kein Build-Schritt erforderlich! Einfach die `index.html` in einem modernen Browser öffnen:
-
-```bash
-# Im Browser öffnen
-start index.html
-```
-
----
-
-## 📄 Lizenz & Verein
+## 📄 Verein
 
 Entwickelt für den **TSV Plattenhardt – Abteilung Mädchenfußball**.
 Frei nutzbar für Trainerinnen und Trainer zur taktischen Ausbildung im Jugendfußball.
