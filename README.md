@@ -82,6 +82,14 @@ Sowohl in der **Taktik-Tafel** als auch in der **Live-Simulation** sind die wich
 
 ---
 
+### 7. 🎮 Interaktives Freispiel (Passen & freies Verschieben per Touch)
+- **Kurz antippen:** Spielt den Ball zur Mitspielerin mit automatischer Live-Prüfung auf **Abseits**, **Deckungsschatten** und **Lücken in der Kette** inklusive Sprechblasen und Trainer-Analyse.
+- **Touch & Schieben (länger berühren & ziehen):** Jede Spielerin (eigene rot, Gegner dunkelgrau) sowie der Ball können völlig frei über das gesamte Spielfeld verschoben werden.
+  - Deckungsschatten, Abseitslinien und verlassene Abwehrlöcher passen sich in Echtzeit an.
+  - Beim Antippen einer Gegnerin wird ein typischer Fehlpass mit direktem Konter simuliert.
+
+---
+
 ## 📱 Offline-Nutzung auf iPad, iPhone & Android (PWA)
 
 Die Taktiktafel ist als **Progressive Web App (PWA)** gebaut und benötigt dank des integrierten Service Workers **keine dauerhafte Internetverbindung auf dem Sportplatz**!

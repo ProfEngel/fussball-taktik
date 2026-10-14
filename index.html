@@ -597,7 +597,8 @@ header {
             <span>⚽ Passen üben (Freispiel)</span>
           </div>
           <p style="font-size:10px; color:#cbd5e1; margin-bottom:6px; line-height:1.35;">
-            Tippe deine Spielerin an und passe zu einer Freundin. Stehst du im Abseits oder bist du gedeckt?
+            👉 <strong>Kurz antippen:</strong> Ball passt dorthin (mit Sofort-Prüfung auf Abseits & Schatten)!<br>
+            👉 <strong>Länger drauf & ziehen:</strong> Jede Spielerin & Gegnerin frei verschieben!
           </p>
           <button class="btn green span2" onclick="toggleFreePlay()">
             🎮 Freispiel starten / beenden
@@ -867,9 +868,9 @@ header {
             <span class="badge-pill">Live-Passprüfung</span>
           </div>
           <p style="font-size:10px; color:#cbd5e1; margin-bottom:8px; line-height:1.4;">
-            1. Tippe auf eine eigene Spielerin (Rot), die den Ball hat.<br>
-            2. Tippe auf dein Passziel (Mitspielerin oder freier Raum).<br>
-            3. Die App prüft automatisch: <strong>Abseits</strong> und <strong>Deckungsschatten</strong>!
+            👉 <strong>Kurz antippen:</strong> Pass ausführen (automatische Analyse von <strong>Abseits</strong> & <strong>Deckungsschatten</strong>).<br>
+            👉 <strong>Touch & Schieben:</strong> Jede Spielerin (eigene & Gegner) oder den Ball frei verschieben!<br>
+            💡 <em>Tipp: Gegnerinnen verschieben passt Deckungskegel & Abseitslinie sofort live an.</em>
           </p>
           <div class="btn-grid">
             <button class="btn green span2" id="btn-toggle-freeplay" onclick="toggleFreePlay()">
@@ -1492,6 +1493,7 @@ function renderPlayers() {
       g.setAttribute('transform', `translate(${p.x},${p.y})`);
       g.id = p.id;
       g.style.cursor = 'grab';
+      g.style.touchAction = 'none';
       g.innerHTML = `
         <circle r="14" fill="#fff" stroke="#111" stroke-width="2.5" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.6))"/>
         <circle r="5" fill="#111"/>
@@ -1524,6 +1526,7 @@ function renderPlayers() {
     g.setAttribute('transform', `translate(${p.x},${p.y})`);
     g.id = p.id;
     g.style.cursor = 'grab';
+    g.style.touchAction = 'none';
     g.innerHTML = `
       ${extras}
       <circle r="20" fill="${mainColor}" stroke="#fff" stroke-width="2.5" filter="drop-shadow(0 3px 6px rgba(0,0,0,0.5))"/>
@@ -1538,24 +1541,38 @@ function renderPlayers() {
 }
 
 // ──────────────────────────────────────────────────────────
-// PERSISTENT DRAG & DROP
+// PERSISTENT DRAG & DROP + TOUCH/TAP INTERACTION
 // ──────────────────────────────────────────────────────────
 function onPlayerPointerDown(e, playerObj, groupEl) {
   if (activeTab === 'draw') return;
 
-  if (freePlayMode) {
-    handleFreePlaySelect(e, playerObj);
-    return;
-  }
-
   e.stopPropagation();
   e.preventDefault();
+
+  if (activeDrag && activeDrag.longPressTimer) {
+    clearTimeout(activeDrag.longPressTimer);
+  }
 
   activeDrag = {
     player: playerObj,
     element: groupEl,
-    pointerId: e.pointerId
+    pointerId: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    startTime: performance.now(),
+    isDragging: false,
+    longPressTimer: null
   };
+
+  // Subtle visual cue when touching & holding a player
+  activeDrag.longPressTimer = setTimeout(() => {
+    if (activeDrag && activeDrag.element) {
+      activeDrag.element.style.filter = 'drop-shadow(0 6px 14px rgba(0,0,0,0.85)) brightness(1.25)';
+      if (navigator.vibrate) {
+        try { navigator.vibrate(15); } catch (_) {}
+      }
+    }
+  }, 200);
 
   try {
     svg.setPointerCapture(e.pointerId);
@@ -1566,26 +1583,74 @@ svg.addEventListener('pointermove', e => {
   if (!activeDrag) return;
   e.preventDefault();
 
-  const pt = toSVGPoint(e.clientX, e.clientY);
-  activeDrag.player.x = clamp(pt.x, 55, 945);
-  activeDrag.player.y = clamp(pt.y, 35, 625);
+  const dist = Math.hypot(e.clientX - activeDrag.startX, e.clientY - activeDrag.startY);
 
-  activeDrag.element.setAttribute('transform', `translate(${activeDrag.player.x},${activeDrag.player.y})`);
-  updateTacticalOverlays();
-  showLiveDragAnalysis(activeDrag.player);
+  // If moved > 6px, switch to dragging
+  if (!activeDrag.isDragging && dist > 6) {
+    activeDrag.isDragging = true;
+    if (activeDrag.longPressTimer) {
+      clearTimeout(activeDrag.longPressTimer);
+      activeDrag.longPressTimer = null;
+    }
+    activeDrag.element.style.cursor = 'grabbing';
+    activeDrag.element.style.filter = 'drop-shadow(0 6px 14px rgba(0,0,0,0.85)) brightness(1.25)';
+  }
+
+  if (activeDrag.isDragging) {
+    const pt = toSVGPoint(e.clientX, e.clientY);
+    activeDrag.player.x = clamp(pt.x, 55, 945);
+    activeDrag.player.y = clamp(pt.y, 35, 625);
+
+    activeDrag.element.setAttribute('transform', `translate(${activeDrag.player.x},${activeDrag.player.y})`);
+    updateTacticalOverlays();
+    showLiveDragAnalysis(activeDrag.player);
+  }
 });
 
 svg.addEventListener('pointerup', e => {
-  if (activeDrag) {
-    try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
-    activeDrag = null;
-    renderPlayers();
+  if (!activeDrag) return;
+
+  try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+
+  if (activeDrag.longPressTimer) {
+    clearTimeout(activeDrag.longPressTimer);
   }
+  if (activeDrag.element) {
+    activeDrag.element.style.filter = '';
+    activeDrag.element.style.cursor = 'grab';
+  }
+
+  const wasDragging = activeDrag.isDragging;
+  const p = activeDrag.player;
+  activeDrag = null;
+
+  if (wasDragging) {
+    renderPlayers();
+
+    // If ball was dragged close to a TSV player in FreePlay, select her
+    if (p.team === 'ball' && freePlayMode) {
+      const nearTsv = players.find(x => x.team === 'tsv' && Math.hypot(x.x - p.x, x.y - p.y) < 45);
+      if (nearTsv) {
+        fpSelected = nearTsv.id;
+        renderPlayers();
+        setStatus(`⚽ Ball liegt bei Nr. ${nearTsv.num} (${nearTsv.role})!`);
+      }
+    }
+    return;
+  }
+
+  // Quick tap (< 6px movement)
+  handlePlayerTap(p);
 });
 
 svg.addEventListener('pointercancel', e => {
   if (activeDrag) {
     try { svg.releasePointerCapture(e.pointerId); } catch (_) {}
+    if (activeDrag.longPressTimer) clearTimeout(activeDrag.longPressTimer);
+    if (activeDrag.element) {
+      activeDrag.element.style.filter = '';
+      activeDrag.element.style.cursor = 'grab';
+    }
     activeDrag = null;
     renderPlayers();
   }
@@ -2012,47 +2077,171 @@ function demoErrorLV() {
 }
 
 // ──────────────────────────────────────────────────────────
-// FREISPIEL (FREE-PLAY) PASSEN
+// FREISPIEL (FREE-PLAY) PASSEN & INTERAKTION
 // ──────────────────────────────────────────────────────────
 function enableFreePlay(enable) {
   freePlayMode = enable;
-  fpSelected = null;
-  const btn = document.getElementById('btn-toggle-freeplay');
-  if (btn) {
-    btn.textContent = enable ? '⏹️ Freispiel Beenden' : '▶️ Freispiel-Modus Aktivieren';
-    btn.className = enable ? 'btn primary span2' : 'btn green span2';
+  const btnCoach = document.getElementById('btn-toggle-freeplay');
+  if (btnCoach) {
+    btnCoach.textContent = enable ? '⏹️ Freispiel Beenden' : '▶️ Freispiel-Modus Aktivieren';
+    btnCoach.className = enable ? 'btn primary span2' : 'btn green span2';
   }
   clearDrawings();
-  renderPlayers();
+
   if (enable) {
-    setStatus('🎮 Freispiel aktiv: Tippe eine rote Spielerin an → dann das Passziel!');
+    const ball = players.find(p => p.id === 'ball') || { x: 360, y: 330 };
+    let closest = null;
+    let minDist = 999;
+    players.filter(p => p.team === 'tsv').forEach(p => {
+      const d = Math.hypot(p.x - ball.x, p.y - ball.y);
+      if (d < minDist) { minDist = d; closest = p; }
+    });
+
+    if (closest && minDist < 150) {
+      fpSelected = closest.id;
+      setStatus(`🎮 Freispiel aktiv: Ball liegt bei Nr. ${closest.num} (${closest.role})! Tippe auf eine Mitspielerin zum Passen oder verschiebe jede Spielerin frei per Touch.`);
+    } else {
+      const p6 = players.find(p => p.id === 'tsv-6');
+      fpSelected = p6 ? p6.id : 'tsv-6';
+      if (p6) {
+        animateTo([{ id: 'ball', x: p6.x + 12, y: p6.y }], 300);
+      }
+      setStatus('🎮 Freispiel aktiv: Ball liegt bei der 6! Tippe auf eine Mitspielerin zum Passen oder verschiebe jede Spielerin frei per Touch.');
+    }
+  } else {
+    fpSelected = null;
+    setStatus('Freispiel beendet.');
   }
+
+  renderPlayers();
 }
 
 function toggleFreePlay() {
   enableFreePlay(!freePlayMode);
 }
 
-function handleFreePlaySelect(e, p) {
-  e.stopPropagation();
-  if (!freePlayMode) return;
+function handlePlayerTap(p) {
+  if (activeTab === 'draw') return;
 
+  // 1. Taktik- / Simulationsmodus
+  if (!freePlayMode) {
+    if (p.team === 'tsv') {
+      showSpeechBubble(p.id, `${p.role}: ${p.num}`, 1800);
+      if (p.is6) {
+        setStatus('🌟 Nr. 6 (ZDM): Zentrale Drehscheibe – Spiel aufdrehen und verlagern!', 'success');
+      } else if (p.role === 'LV' || p.role === 'RV') {
+        setStatus(`🛡️ Nr. ${p.num} (${p.role}): Außenbahn absichern & bei Ballbesitz aufrücken.`);
+      } else if (p.role === 'IV') {
+        setStatus('🛡️ Nr. 4 (IV): Zentrum vor dem Tor sichern & Kette zusammenhalten.');
+      } else if (p.role === 'ST') {
+        setStatus('⚡ Nr. 9 (ST): Tiefe suchen & gegnerische Abseitslinie beachten!');
+      } else {
+        setStatus(`⚽ Nr. ${p.num} (${p.role}) angetippt.`);
+      }
+    } else if (p.team === 'geg') {
+      showSpeechBubble(p.id, `Gegner ${p.num}`, 1800);
+      setStatus(`Gegnerin Nr. ${p.num} (${p.role}) wirft Deckungsschatten nach hinten.`);
+    } else if (p.team === 'ball') {
+      setStatus('⚽ Ball: Verschiebe den Ball oder starte eine Simulation!');
+    }
+    return;
+  }
+
+  // 2. Freispiel-Modus
+  if (p.team === 'ball') {
+    setStatus('⚽ Ball angetippt – wähle eine Spielerin aus, die den Ball bekommen soll!');
+    return;
+  }
+
+  // Fall A: Noch kein Ballbesitzer ausgewählt
+  if (!fpSelected) {
+    if (p.team === 'tsv') {
+      fpSelected = p.id;
+      animateTo([{ id: 'ball', x: p.x + 12, y: p.y }], 350);
+      renderPlayers();
+      setStatus(`⚽ Nr. ${p.num} (${p.role}) hat den Ball! Tippe auf eine Mitspielerin für den Pass.`, 'success');
+      showSpeechBubble(p.id, 'Ich hab den Ball!', 2000);
+    } else {
+      setStatus(`Gegnerin Nr. ${p.num} kann den TSV-Ball nicht annehmen. Wähle eine rote TSV-Spielerin!`, 'warning');
+    }
+    return;
+  }
+
+  const passer = players.find(x => x.id === fpSelected);
+  if (!passer) {
+    fpSelected = p.team === 'tsv' ? p.id : null;
+    renderPlayers();
+    return;
+  }
+
+  // Fall B: Spielerin angetippt, die den Ball bereits hat
+  if (p.id === fpSelected) {
+    setStatus(`⚽ Nr. ${p.num} (${p.role}) hat den Ball – tippe auf eine Mitspielerin oder in den freien Raum!`);
+    showSpeechBubble(p.id, 'Ich suche eine Station!', 2000);
+    return;
+  }
+
+  // Fall C: Pass zur eigenen Mitspielerin
   if (p.team === 'tsv') {
+    clearDrawings();
+
+    // 1. Abseitsprüfung
+    if (isOffside(p)) {
+      const oppOffX = getOpponentOffsideX();
+      drawArrow(passer.x, passer.y, p.x, p.y, '#ef4444', 'arr-red');
+      setStatus(`⛔ ABSEITS! Nr. ${p.num} (${p.role}) stand im Abseits! (${Math.round((p.x - oppOffX)/10)}m hinter der blauen Linie)`, 'warning');
+      showSpeechBubble(p.id, '⛔ Abseits gepfiffen!', 2500);
+      animateTo([{ id: 'ball', x: (passer.x + p.x)/2, y: (passer.y + p.y)/2 }], 400);
+      return;
+    }
+
+    // 2. Deckungsschattenprüfung
+    if (isInCoverShadow(p)) {
+      drawArrow(passer.x, passer.y, p.x, p.y, '#f59e0b', 'arr-yellow');
+      setStatus(`⚠️ Riskanter Pass! Nr. ${p.num} (${p.role}) stand im Deckungsschatten der Gegnerin!`, 'warning');
+      showSpeechBubble(p.id, 'Puh, knapp angekommen!', 2500);
+    } else {
+      drawArrow(passer.x, passer.y, p.x, p.y, '#22c55e', 'arr-green');
+      if (p.is6) {
+        setStatus('🟢 PERFEKTER PASS ZUR 6! Dreht auf und verlagert das Spiel!', 'success');
+        showSpeechBubble(p.id, 'Danke! Ich drehe auf!', 2500);
+      } else {
+        setStatus(`🟢 SAUBERER PASS zu Nr. ${p.num} (${p.role}) frei im Raum!`, 'success');
+        showSpeechBubble(p.id, 'Danke! Hab ihn!', 2000);
+      }
+    }
+
+    animateTo([{ id: 'ball', x: p.x + 12, y: p.y }], 450);
     fpSelected = p.id;
     renderPlayers();
-    setStatus(`⚽ ${p.num} (${p.role}) hat den Ball – wohin soll der Pass gehen?`);
+    return;
+  }
+
+  // Fall D: Fehlpass direkt zur Gegnerin
+  if (p.team === 'geg') {
+    clearDrawings();
+    drawArrow(passer.x, passer.y, p.x, p.y, '#ef4444', 'arr-red');
+    animateTo([{ id: 'ball', x: p.x - 12, y: p.y }], 450);
+    setStatus(`🔴 FEHLPASS! Ball direkt in die Füße von Gegnerin Nr. ${p.num} (${p.role}) gespielt! Kontergefahr!`, 'warning');
+    showSpeechBubble(p.id, 'Danke für den Ball! 😈', 2500);
+    fpSelected = null;
+    renderPlayers();
+    return;
   }
 }
 
 function resetBallTo6() {
   const p6 = players.find(p => p.id === 'tsv-6');
   if (p6) {
-    animateTo([{ id: 'ball', x: p6.x + 15, y: p6.y }], 500);
-    setStatus('⚽ Ball liegt bei der 6!');
+    animateTo([{ id: 'ball', x: p6.x + 12, y: p6.y }], 400);
+    fpSelected = 'tsv-6';
+    renderPlayers();
+    setStatus('⚽ Ball liegt bei der 6 (ZDM)! Tippe auf eine Mitspielerin zum Weiterspielen.', 'success');
+    showSpeechBubble('tsv-6', 'Ball liegt bei mir!', 2000);
   }
 }
 
-// Click on pitch during Free-Play
+// Click / Tap auf das Spielfeld im Freispiel
 svg.addEventListener('click', e => {
   if (activeTab === 'draw') return;
   if (!freePlayMode || !fpSelected) return;
@@ -2062,43 +2251,25 @@ svg.addEventListener('click', e => {
 
   const target = toSVGPoint(e.clientX, e.clientY);
 
-  const receiver = players.find(p => {
-    return p.team === 'tsv' && p.id !== fpSelected && Math.hypot(p.x - target.x, p.y - target.y) < 24;
-  });
+  // Toleranz-Check: Falls Spieler um wenige Pixel verfehlt wurde (Touch-Optimierung)
+  const nearby = players.find(p => p.team !== 'ball' && Math.hypot(p.x - target.x, p.y - target.y) <= 32);
+  if (nearby) {
+    handlePlayerTap(nearby);
+    return;
+  }
 
+  // Pass in den freien Raum
   clearDrawings();
-
-  if (receiver) {
-    if (isOffside(receiver)) {
-      drawArrow(passer.x, passer.y, receiver.x, receiver.y, '#ef4444', 'arr-red');
-      setStatus(`⛔ ABSEITS! Nr.${receiver.num} (${receiver.role}) steht im Abseits!`, 'warning');
-      showSpeechBubble(receiver.id, '⛔ Abseits!', 2500);
-      return;
-    }
-    if (isInCoverShadow(receiver)) {
-      drawArrow(passer.x, passer.y, receiver.x, receiver.y, '#f59e0b', 'arr-yellow');
-      setStatus(`⚠️ Riskanter Pass! Nr.${receiver.num} stand im Deckungsschatten!`, 'warning');
-      showSpeechBubble(receiver.id, 'Puh, knapp!', 2500);
-    } else {
-      drawArrow(passer.x, passer.y, receiver.x, receiver.y, '#22c55e', 'arr-green');
-      setStatus(`✅ Sauberer Pass zu Nr.${receiver.num} (${receiver.role})!`, 'success');
-      showSpeechBubble(receiver.id, 'Danke!', 2000);
-    }
-    animateTo([{ id: 'ball', x: receiver.x + 12, y: receiver.y }], 500);
-    fpSelected = receiver.id;
-    renderPlayers();
+  const oppOffX = getOpponentOffsideX();
+  if (showOffside && target.x > oppOffX && target.x > 500) {
+    drawArrow(passer.x, passer.y, target.x, target.y, '#ef4444', 'arr-red');
+    setStatus('⛔ Pass in die gegnerische Abseitszone!', 'warning');
   } else {
-    const oppOffX = getOpponentOffsideX();
-    if (showOffside && target.x > oppOffX && target.x > 500) {
-      drawArrow(passer.x, passer.y, target.x, target.y, '#ef4444', 'arr-red');
-      setStatus('⛔ Pass in die gegnerische Abseitszone!', 'warning');
-    } else {
-      drawArrow(passer.x, passer.y, target.x, target.y, '#38bdf8', 'arr-blue');
-      animateTo([{ id: 'ball', x: target.x, y: target.y }], 500);
-      setStatus('⚽ Pass in den freien Raum!');
-      fpSelected = null;
-      renderPlayers();
-    }
+    drawArrow(passer.x, passer.y, target.x, target.y, '#38bdf8', 'arr-blue');
+    animateTo([{ id: 'ball', x: target.x, y: target.y }], 500);
+    setStatus('⚽ Pass in den freien Raum!');
+    fpSelected = null;
+    renderPlayers();
   }
 });
 
