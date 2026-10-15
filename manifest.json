@@ -1,7 +1,7 @@
 {
-  "name": "TSV Plattenhardt - Taktiktafel",
-  "short_name": "TSV Taktik",
-  "description": "Interaktive Fußball-Taktiktafel für Juniorinnen & Trainer (3-1-3-1, Simulation, Freispiel, Abseits- & Deckungsanalyse)",
+  "name": "FussballTaktik - Taktikboard",
+  "short_name": "FussballTaktik",
+  "description": "Interaktive Fußball-Taktiktafel für Juniorinnen & Trainer (Simulation, Freispiel, Abseits- & Deckungsanalyse)",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>TSV Plattenhardt – Taktiktafel PWA</title>
+<title>FussballTaktik – Interaktive Taktiktafel PWA</title>
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#0a1710">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TSV Taktik">
+<meta name="apple-mobile-web-app-title" content="FussballTaktik">
 <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%23e52421'/><circle cx='256' cy='256' r='180' fill='%23ffffff'/><circle cx='256' cy='256' r='140' fill='%230a1710'/><text x='50%25' y='56%25' font-size='130' font-weight='bold' fill='%23ffffff' text-anchor='middle' font-family='Arial,sans-serif'>6</text></svg>">
 
 <style>
@@ -201,6 +201,17 @@ header {
   gap: 8px;
   flex-shrink: 0;
   height: 100%;
+  transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1), padding 0.24s ease, opacity 0.2s ease, border-color 0.2s ease;
+}
+
+#sidebar.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border-left: none !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 #sidebar::-webkit-scrollbar { width: 5px; }
@@ -215,7 +226,44 @@ header {
     border-left: none;
     border-top: 1px solid var(--border);
     padding-bottom: max(35px, var(--sab));
+    transition: height 0.24s cubic-bezier(0.4, 0, 0.2, 1), padding 0.24s ease, opacity 0.2s ease;
   }
+  #sidebar.collapsed {
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border-top: none !important;
+  }
+}
+
+/* Floating Sidebar Toggle Button on Pitch */
+#floating-sidebar-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 25;
+  background: rgba(19, 28, 38, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid #364960;
+  color: #f1f5f9;
+  padding: 5px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+  transition: all 0.2s ease;
+}
+#floating-sidebar-toggle:hover {
+  background: #2563eb;
+  border-color: #60a5fa;
+  transform: scale(1.03);
+}
+#floating-sidebar-toggle:active {
+  transform: scale(0.96);
 }
 
 /* CARDS & CONTROLS */
@@ -414,10 +462,10 @@ header {
   <!-- ════════════ HEADER ════════════ -->
   <header>
     <div class="header-left">
-      <div class="crest">TSV</div>
+      <div class="crest" style="background:#e52421; font-size:13px;">⚽</div>
       <div class="title-group">
-        <h1>TSV Plattenhardt</h1>
-        <span>Taktikboard</span>
+        <h1>FussballTaktik</h1>
+        <span>Taktikboard & Live-Simulation</span>
       </div>
     </div>
 
@@ -437,6 +485,7 @@ header {
 
     <div class="header-right">
       <button class="icon-btn" onclick="runLiveTacticAnalysis()" title="Aktuelle Tafelstellung auswerten">🔍 Analyse</button>
+      <button id="btn-toggle-sidebar" class="icon-btn" onclick="toggleSidebar()" title="Seitenleiste ein-/ausblenden">◀ Menü</button>
       <button class="help-circle-btn" onclick="openHelp()" title="Hilfe & Erklärungen">?</button>
     </div>
   </header>
@@ -447,6 +496,10 @@ header {
 
     <!-- PITCH CONTAINER -->
     <div id="pitch-container">
+      <button id="floating-sidebar-toggle" onclick="toggleSidebar()" title="Menü ein-/ausblenden">
+        <span id="floating-toggle-icon">◀</span>
+        <span id="floating-toggle-text">Menü</span>
+      </button>
       <svg id="pitch-svg" viewBox="0 0 1000 660">
         <defs>
           <linearGradient id="grass" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -521,7 +574,7 @@ header {
           <line x1="840" y1="30" x2="840" y2="630"/>
         </g>
 
-        <!-- Strafräume Links (TSV) & Rechts (Gegner) -->
+        <!-- Strafräume Links (Eigenes Team) & Rechts (Gegner) -->
         <rect x="50"  y="160" width="140" height="340" fill="none" stroke="#fff" stroke-width="3" opacity="0.85"/>
         <rect x="50"  y="240" width="50"  height="180" fill="none" stroke="#fff" stroke-width="2" opacity="0.8"/>
         <circle cx="150" cy="330" r="3" fill="#fff"/>
@@ -706,6 +759,44 @@ header {
           </div>
         </div>
 
+        <!-- 6. ECKBALL (STANDARDSITUATION) -->
+        <div class="scenario-box">
+          <div class="scenario-header">
+            <span>6. Eckball (Standardsituation)</span>
+            <span class="badge-pill">Ecke</span>
+          </div>
+          <div class="scenario-desc">Staffelung bei eigenem Eckstoß (Box-Besetzung & Restabsicherung):</div>
+          <div class="btn-grid-case">
+            <button class="btn-case best" onclick="applyPreset('cornerGood')">
+              🟢 Best Case
+              <span class="mini">1. & 2. Pfosten, Rückraum + Kette sichert</span>
+            </button>
+            <button class="btn-case worst" onclick="applyPreset('cornerBad')">
+              🔴 Worst Case
+              <span class="mini">Alle im 5er geklumpt, Mittellinie offen</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 7. FREISTOSS (22M GEFAHRENZONE) -->
+        <div class="scenario-box">
+          <div class="scenario-header">
+            <span>7. Freistoß vor dem 16er (22m)</span>
+            <span class="badge-pill">Freistoß</span>
+          </div>
+          <div class="scenario-desc">Freistoß-Variante mit Finte vs. planloser Schuss in die Mauer:</div>
+          <div class="btn-grid-case">
+            <button class="btn-case best" onclick="applyPreset('freeKickGood')">
+              🟢 Best Case
+              <span class="mini">Finte, Steckpass & Querleger</span>
+            </button>
+            <button class="btn-case worst" onclick="applyPreset('freeKickBad')">
+              🔴 Worst Case
+              <span class="mini">Voll in die Mauer & Freeze beim Konter</span>
+            </button>
+          </div>
+        </div>
+
         <!-- GRUNDPOSITION & AUFSTELLUNGEN -->
         <div class="card">
           <div class="card-title">
@@ -725,6 +816,20 @@ header {
       <!-- 📋 TRAINER-MODUS: TAB 2 – LIVE-SIMULATION     -->
       <!-- ═══════════════════════════════════════════════ -->
       <div id="panel-sim" class="tab-panel" style="display:none;">
+
+        <!-- ⏱️ SIMULATIONS-GESCHWINDIGKEIT -->
+        <div class="card" style="border:1.5px solid #22c55e;">
+          <div class="card-title">
+            <span>⏱️ Simulations-Tempo</span>
+            <span id="sim-speed-val" class="badge-pill" style="background:#15803d; color:#fff;">1.0x (Normal)</span>
+          </div>
+          <input type="range" id="sim-speed-slider" min="0.3" max="2.0" value="1.0" step="0.1" style="width:100%; accent-color:#22c55e; cursor:pointer;" oninput="setSimSpeed(this.value)">
+          <div class="btn-grid-3" style="margin-top:6px;">
+            <button class="btn" id="btn-speed-0_5" onclick="setSimSpeed(0.5)">0.5x Slow-Mo</button>
+            <button class="btn active-toggle" id="btn-speed-1_0" onclick="setSimSpeed(1.0)">1.0x Normal</button>
+            <button class="btn" id="btn-speed-1_5" onclick="setSimSpeed(1.5)">1.5x Flott</button>
+          </div>
+        </div>
 
         <!-- INTERAKTIVE SIMULATION AB MANUELLER POSITION -->
         <div class="card" style="border:1.5px solid #38bdf8;">
@@ -856,6 +961,44 @@ header {
           </div>
         </div>
 
+        <!-- SZENARIO 7: ECKBALL -->
+        <div class="scenario-box">
+          <div class="scenario-header">
+            <span>Szenario 7: Eckball-Variante & Absicherung</span>
+            <span class="badge-pill">Standard</span>
+          </div>
+          <div class="scenario-desc">Kurze Ecke anbieten, Zug zum langen Pfosten & Kette sichert ab:</div>
+          <div class="btn-grid-case">
+            <button class="btn-case best" onclick="simCornerBest()">
+              🟢 ▶️ Ideallösung (4 Phasen)
+              <span class="mini">Kurzpass, Hereingabe langer Pfosten → Tor!</span>
+            </button>
+            <button class="btn-case worst" onclick="simCornerWorst()">
+              🔴 ▶️ Typischer Fehler (4 Phasen)
+              <span class="mini">Alle im 5er → TW fängt ab → Kontertor!</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SZENARIO 8: FREISTOSS (22M) -->
+        <div class="scenario-box">
+          <div class="scenario-header">
+            <span>Szenario 8: Freistoß an der Strafraumgrenze</span>
+            <span class="badge-pill">Freistoß</span>
+          </div>
+          <div class="scenario-desc">Einstudierte Freistoß-Finte vs. Verzweiflungsschuss:</div>
+          <div class="btn-grid-case">
+            <button class="btn-case best" onclick="simFreeKickBest()">
+              🟢 ▶️ Ideallösung (4 Phasen)
+              <span class="mini">Lauftäuschung, Steckpass, Querleger → Tor!</span>
+            </button>
+            <button class="btn-case worst" onclick="simFreeKickWorst()">
+              🔴 ▶️ Typischer Fehler (4 Phasen)
+              <span class="mini">Bolzen in Mauer, Frust-Stand → Kontertor!</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
       <!-- ═══════════════════════════════════════════════ -->
@@ -922,7 +1065,7 @@ header {
         </div>
       </div>
 
-      <!-- ── PERMANENT TOGGLES (WIRKUNGSKREISE, ABSEITS, KEGEL, LÖCHER) ── -->
+      <!-- ── PERMANENT TOGGLES (WIRKUNGSKREISE, ABSEITS, KEGEL, LÖCHER, GEGNER-SICHTBARKEIT) ── -->
       <div class="card">
         <div class="card-title">
           <span>👁️ Taktische Einblendungen</span>
@@ -933,6 +1076,20 @@ header {
           <button class="btn active-toggle" id="btn-cones" onclick="toggleCones()">🔺 Passschatten / Kegel</button>
           <button class="btn active-toggle" id="btn-gaps" onclick="toggleGaps()">⚠️ Ketten-Lücken</button>
           <button class="btn active-toggle span2" id="btn-holes" onclick="toggleHoles()">🕳️ Offene Löcher (Verlassene Räume)</button>
+        </div>
+
+        <!-- 👥 GEGNER AUSBLENDEN / TRANSPARENT -->
+        <div style="margin-top:10px; padding-top:8px; border-top:1px solid #334155;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            <span style="font-size:10px; font-weight:800; color:#cbd5e1;">👥 Gegner-Sichtbarkeit:</span>
+            <span id="opp-opacity-val" style="font-size:10px; font-weight:900; color:#38bdf8; background:#0f172a; padding:1px 6px; border-radius:4px; border:1px solid #334155;">100%</span>
+          </div>
+          <input type="range" id="slider-opp-opacity" min="0" max="100" value="100" step="5" style="width:100%; accent-color:#38bdf8; cursor:pointer;" oninput="setOpponentOpacity(this.value)">
+          <div class="btn-grid-3" style="margin-top:6px;">
+            <button class="btn active-toggle" id="btn-opp-100" onclick="setOpponentOpacity(100)">100% (Voll)</button>
+            <button class="btn" id="btn-opp-25" onclick="setOpponentOpacity(25)">25% (Blass)</button>
+            <button class="btn" id="btn-opp-0" onclick="setOpponentOpacity(0)">0% (Aus)</button>
+          </div>
         </div>
       </div>
 
@@ -955,7 +1112,19 @@ header {
 <div id="help-modal">
   <div class="help-box">
     <button class="help-close" onclick="closeHelp()">✕</button>
-    <h2>📖 TSV Plattenhardt – Taktikboard Handbuch</h2>
+    <h2>📖 FussballTaktik – Handbuch & Coaching-Guide</h2>
+
+    <div class="help-section">
+      <h3>🆕 Neue Coaching-Tools (Update)</h3>
+      <div class="rule-box">
+        <ul>
+          <li><strong>👥 Gegner-Sichtbarkeit:</strong> Mit dem Regler kannst du den Gegner auf <em>100% (Voll)</em>, <em>25% (Blass/Transparent)</em> oder <em>0% (Ausgeblendet)</em> schalten, um reine Spielzüge ohne visuelle Ablenkung zu coachen.</li>
+          <li><strong>⏱️ Simulations-Tempo:</strong> Verlangsame die Live-Simulation auf <em>0.5x Slow-Mo</em> für detailgenaue Schulung oder beschleunige auf <em>1.5x</em>.</li>
+          <li><strong>📐 Vollbild & Menü ein-/ausklappen:</strong> Klicke oben rechts auf <em>◀ Menü</em> (oder den Floating-Button am Platzrand), um die Seitenleiste einzuklappen und das Spielfeld auf 100% Bildschirmbreite zu genießen.</li>
+          <li><strong>🎯 Eckball & Freistoß:</strong> Einstudierte Standards mit Best & Worst Case in Taktik und mehrphasiger Live-Simulation.</li>
+        </ul>
+      </div>
+    </div>
 
     <div class="help-section">
       <h3>🕳️ Offene Löcher & Verlassene Räume erklärt</h3>
@@ -976,7 +1145,7 @@ header {
         <ul>
           <li><strong style="color:#38bdf8;">1. Blaue Linie (Gegnerische Abseitslinie):</strong> Liegt exakt beim vorletzten Gegner (letzter Verteidiger vor der Torhüterin). Alles dahinter ist Abseits!</li>
           <li><strong style="color:#facc15;">2. Gelbe/Rote Linie (Stürmer-Referenzlinie):</strong> Zeigt genau, wo unsere vorderste Angreiferin steht. Ist sie dahinter → ⛔ Abseits! Ist sie davor → ✅ Regulär!</li>
-          <li><strong style="color:#22c55e;">3. Grüne Linie (Eigene Kettenhöhe):</strong> Liegt bei unserer letzten Verteidigerin vor dem TSV-Tor. Zeigt, wie hoch unsere Kette steht und wo gegnerische Angreifer ins Abseits laufen!</li>
+          <li><strong style="color:#22c55e;">3. Grüne Linie (Eigene Kettenhöhe):</strong> Liegt bei unserer letzten Verteidigerin vor dem eigenen Tor. Zeigt, wie hoch unsere Kette steht und wo gegnerische Angreifer ins Abseits laufen!</li>
         </ul>
       </div>
     </div>
@@ -1040,13 +1209,16 @@ const layerCorridors = document.getElementById('layer-corridors');
 const banner         = document.getElementById('status-banner');
 
 // ═══ State ═══
-let currentAudience = 'coach'; // 'kids' or 'coach'
-let showZones       = false;
-let showOffside     = true;    // 3 lines (Opponent, Striker, Own defense)
-let showCones       = true;    // Ball-relative Cover shadows
-let showGaps        = true;    // Defensive chain gap detection
-let showHoles       = true;    // Abandoned defensive zones / holes
-let showCorridors   = false;
+let currentAudience    = 'coach'; // 'kids' or 'coach'
+let showZones          = false;
+let showOffside        = true;    // 3 lines (Opponent, Striker, Own defense)
+let showCones          = true;    // Ball-relative Cover shadows
+let showGaps           = true;    // Defensive chain gap detection
+let showHoles          = true;    // Abandoned defensive zones / holes
+let showCorridors      = false;
+let opponentOpacity    = 100;     // 100 = full visible, 25 = transparent, 0 = hidden
+let simSpeedMultiplier = 1.0;     // 0.3x to 2.0x
+let sidebarCollapsed   = false;   // Collapsible sidebar for 100% full-screen pitch
 
 let activeTab       = 'tactic';
 let freePlayMode    = false;
@@ -1069,7 +1241,7 @@ let drawingHistory   = [];
 
 // ═══ Player Database ═══
 const initialPlayers = [
-  // TSV Plattenhardt (Rot) – 3-1-3-1
+  // Eigenes Team (Rot) – 3-1-3-1
   { id:'tsv-1',  team:'tsv', num:'1',  role:'TW',  x:80,  y:330, is6:false },
   { id:'tsv-2',  team:'tsv', num:'2',  role:'LV',  x:220, y:150, is6:false },
   { id:'tsv-4',  team:'tsv', num:'4',  role:'IV',  x:190, y:330, is6:false },
@@ -1134,6 +1306,79 @@ const DEFENSIVE_SECTORS = [
     threshold: 120
   }
 ];
+
+// ──────────────────────────────────────────────────────────
+// SIDEBAR COLLAPSE / EXPAND TOGGLE
+// ──────────────────────────────────────────────────────────
+function toggleSidebar() {
+  sidebarCollapsed = !sidebarCollapsed;
+  const sidebar = document.getElementById('sidebar');
+  const btnHeader = document.getElementById('btn-toggle-sidebar');
+  const floatingIcon = document.getElementById('floating-toggle-icon');
+  const floatingText = document.getElementById('floating-toggle-text');
+
+  if (sidebarCollapsed) {
+    sidebar.classList.add('collapsed');
+    if (btnHeader) btnHeader.textContent = '▶ Menü';
+    if (floatingIcon) floatingIcon.textContent = '◀';
+    if (floatingText) floatingText.textContent = 'Menü';
+    setStatus('📐 Menü eingeklappt – 100% Vollbild für Taktik & Spielfeld');
+  } else {
+    sidebar.classList.remove('collapsed');
+    if (btnHeader) btnHeader.textContent = '◀ Menü';
+    if (floatingIcon) floatingIcon.textContent = '✕';
+    if (floatingText) floatingText.textContent = 'Zu';
+    setStatus('📋 Menü ausgeklappt');
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// OPPONENT TRANSPARENCY / VISIBILITY
+// ──────────────────────────────────────────────────────────
+function setOpponentOpacity(val) {
+  opponentOpacity = parseInt(val, 10);
+  const badge = document.getElementById('opp-opacity-val');
+  if (badge) badge.textContent = `${opponentOpacity}%`;
+  const slider = document.getElementById('slider-opp-opacity');
+  if (slider) slider.value = opponentOpacity;
+
+  ['100', '25', '0'].forEach(v => {
+    const btn = document.getElementById(`btn-opp-${v}`);
+    if (btn) btn.classList.toggle('active-toggle', opponentOpacity === parseInt(v, 10));
+  });
+
+  renderPlayers();
+  if (opponentOpacity === 0) {
+    setStatus('👻 Gegner ausgeblendet – Fokus auf eigene Taktik & Passwege');
+  } else if (opponentOpacity <= 35) {
+    setStatus(`👓 Gegner transparent (${opponentOpacity}%) – Taktiklinien klarer sichtbar`);
+  } else {
+    setStatus('👥 Gegner voll sichtbar (100%)');
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// SIMULATION SPEED SLIDER & PRESETS
+// ──────────────────────────────────────────────────────────
+function setSimSpeed(val) {
+  simSpeedMultiplier = parseFloat(val);
+  const badge = document.getElementById('sim-speed-val');
+  if (badge) {
+    let lbl = `${simSpeedMultiplier.toFixed(1)}x`;
+    if (simSpeedMultiplier <= 0.6) lbl += ' (Slow-Mo)';
+    else if (simSpeedMultiplier >= 1.4) lbl += ' (Flott)';
+    else lbl += ' (Normal)';
+    badge.textContent = lbl;
+  }
+  const slider = document.getElementById('sim-speed-slider');
+  if (slider) slider.value = simSpeedMultiplier;
+
+  ['0.5', '1.0', '1.5'].forEach(v => {
+    const btn = document.getElementById(`btn-speed-${v.replace('.', '_')}`);
+    if (btn) btn.classList.toggle('active-toggle', Math.abs(simSpeedMultiplier - parseFloat(v)) < 0.05);
+  });
+  setStatus(`⏱️ Simulations-Tempo: ${simSpeedMultiplier.toFixed(1)}x`);
+}
 
 // ──────────────────────────────────────────────────────────
 // AUDIENCE SWITCHER: FUßBALLERINNEN VS TRAINER
@@ -1351,7 +1596,7 @@ function updateTacticalOverlays() {
         fill: 'rgba(239, 68, 68, 0.22)',
         stroke: '#ef4444',
         'stroke-width': 1,
-        opacity: 0.85,
+        opacity: 0.85 * (opponentOpacity / 100),
         'pointer-events': 'none'
       });
       layerCones.appendChild(cone);
@@ -1359,7 +1604,7 @@ function updateTacticalOverlays() {
       const circ = mkEl('circle');
       setAttrs(circ, { cx: opp.x, cy: opp.y, r: 42,
         fill: 'none', stroke: '#ef4444', 'stroke-width': 1,
-        'stroke-dasharray': '4 4', opacity: 0.35, 'pointer-events': 'none' });
+        'stroke-dasharray': '4 4', opacity: 0.35 * (opponentOpacity / 100), 'pointer-events': 'none' });
       layerCones.appendChild(circ);
     });
   }
@@ -1531,6 +1776,15 @@ function renderPlayers() {
     g.id = p.id;
     g.style.cursor = 'grab';
     g.style.touchAction = 'none';
+
+    if (!isTsv) {
+      g.classList.add('player-geg');
+      g.style.opacity = opponentOpacity / 100;
+      if (opponentOpacity === 0) {
+        g.style.pointerEvents = 'none';
+      }
+    }
+
     g.innerHTML = `
       ${extras}
       <circle r="20" fill="${mainColor}" stroke="#fff" stroke-width="2.5" filter="drop-shadow(0 3px 6px rgba(0,0,0,0.5))"/>
@@ -1712,7 +1966,7 @@ function applyPreset(type) {
 
   if (type === 'base') {
     resetToInitial();
-    setStatus('🏟️ Grundordnung 3-1-3-1 (TSV Mädchen-Standard)');
+    setStatus('🏟️ Grundordnung 3-1-3-1 (Basis-Standard)');
     return;
   }
 
@@ -1828,6 +2082,86 @@ function applyPreset(type) {
       { id:'geg-9',  x:120, y:330 },
       { id:'ball',   x:170, y:95  }
     ];
+  } else if (type === 'cornerGood') {
+    setStatus('🟢 BEST CASE ECKBALL: Kurze Ecke angeboten, Box besetzt (1. & 2. Pfosten), Kette & 6er sichern ab!', 'success');
+    targets = [
+      { id:'tsv-1',  x:80,  y:330 },
+      { id:'tsv-2',  x:430, y:200 },
+      { id:'tsv-4',  x:410, y:330 },
+      { id:'tsv-3',  x:430, y:460 },
+      { id:'tsv-6',  x:690, y:330 },
+      { id:'tsv-7',  x:870, y:560 },
+      { id:'tsv-9',  x:860, y:260 },
+      { id:'tsv-10', x:890, y:360 },
+      { id:'tsv-11', x:945, y:620 },
+      { id:'ball',   x:940, y:615 },
+      { id:'geg-1',  x:920, y:330 },
+      { id:'geg-2',  x:910, y:270 },
+      { id:'geg-4',  x:870, y:310 },
+      { id:'geg-3',  x:880, y:380 },
+      { id:'geg-6',  x:850, y:520 },
+      { id:'geg-7',  x:540, y:260 },
+      { id:'geg-10', x:750, y:330 },
+      { id:'geg-11', x:560, y:400 },
+      { id:'geg-9',  x:840, y:340 }
+    ];
+  } else if (type === 'cornerBad') {
+    setStatus('🔴 WORST CASE ECKBALL: Alle im 5er geklumpt, Mittellinie offen, gegnerischer Konter lauert!', 'warning');
+    targets = [
+      { id:'tsv-1',  x:80,  y:330 },
+      { id:'tsv-2',  x:890, y:280 },
+      { id:'tsv-4',  x:905, y:320 },
+      { id:'tsv-3',  x:895, y:360 },
+      { id:'tsv-6',  x:910, y:300 },
+      { id:'tsv-7',  x:915, y:340 },
+      { id:'tsv-9',  x:910, y:310 },
+      { id:'tsv-10', x:920, y:330 },
+      { id:'tsv-11', x:945, y:620 },
+      { id:'ball',   x:940, y:615 },
+      { id:'geg-1',  x:930, y:330 },
+      { id:'geg-7',  x:520, y:250 },
+      { id:'geg-9',  x:520, y:330 },
+      { id:'geg-11', x:520, y:410 }
+    ];
+  } else if (type === 'freeKickGood') {
+    setStatus('🟢 BEST CASE FREISTOSS (22m): Finte über den Ball, Steckpass um die 2er-Mauer, Querpass → Tor!', 'success');
+    targets = [
+      { id:'tsv-1',  x:80,  y:330 },
+      { id:'tsv-2',  x:350, y:180 },
+      { id:'tsv-4',  x:320, y:330 },
+      { id:'tsv-3',  x:350, y:480 },
+      { id:'tsv-6',  x:580, y:330 },
+      { id:'tsv-7',  x:710, y:220 },
+      { id:'tsv-10', x:690, y:250 },
+      { id:'tsv-9',  x:800, y:210 },
+      { id:'tsv-11', x:840, y:410 },
+      { id:'ball',   x:705, y:245 },
+      { id:'geg-1',  x:920, y:330 },
+      { id:'geg-2',  x:780, y:235 },
+      { id:'geg-4',  x:780, y:265 },
+      { id:'geg-6',  x:790, y:320 },
+      { id:'geg-3',  x:830, y:380 },
+      { id:'geg-10', x:680, y:330 },
+      { id:'geg-9',  x:500, y:330 }
+    ];
+  } else if (type === 'freeKickBad') {
+    setStatus('🔴 WORST CASE FREISTOSS: Überhastet voll in die Mauer gebolzt, Team pennt beim Konter!', 'warning');
+    targets = [
+      { id:'tsv-1',  x:80,  y:330 },
+      { id:'tsv-2',  x:480, y:140 },
+      { id:'tsv-4',  x:380, y:330 },
+      { id:'tsv-3',  x:480, y:520 },
+      { id:'tsv-6',  x:660, y:330 },
+      { id:'tsv-7',  x:720, y:190 },
+      { id:'tsv-10', x:705, y:250 },
+      { id:'tsv-9',  x:860, y:220 },
+      { id:'tsv-11', x:850, y:440 },
+      { id:'ball',   x:710, y:250 },
+      { id:'geg-1',  x:920, y:330 },
+      { id:'geg-2',  x:780, y:240 },
+      { id:'geg-4',  x:780, y:265 },
+      { id:'geg-9',  x:540, y:330 }
+    ];
   }
 
   // Merge targets with initialPlayers so any player not involved in the preset returns to home
@@ -1850,6 +2184,24 @@ function applyPreset(type) {
     } else if (type === 'defenseWorst') {
       drawArrow(170, 95, 120, 330, '#ef4444', 'arr-red');
       showSpeechBubble('geg-9', 'Danke für das Tor!', 2500);
+    } else if (type === 'cornerGood') {
+      drawArrow(945, 620, 870, 560, '#22c55e', 'arr-green');
+      drawArrow(870, 560, 890, 360, '#22c55e', 'arr-green');
+      showSpeechBubble('tsv-7', 'Kurz frei!', 2500);
+      showSpeechBubble('tsv-10', '2. Pfosten!', 2500);
+    } else if (type === 'cornerBad') {
+      drawArrow(945, 620, 930, 330, '#ef4444', 'arr-red');
+      showSpeechBubble('geg-1', 'Meine Beute!', 2500);
+      showSpeechBubble('geg-9', 'Ich geh Konter!', 2500);
+    } else if (type === 'freeKickGood') {
+      drawArrow(690, 250, 800, 210, '#22c55e', 'arr-green');
+      drawArrow(800, 210, 840, 410, '#22c55e', 'arr-green');
+      showSpeechBubble('tsv-7', 'Finte!', 2500);
+      showSpeechBubble('tsv-9', 'Steckpass!', 2500);
+    } else if (type === 'freeKickBad') {
+      drawArrow(705, 250, 780, 250, '#ef4444', 'arr-red');
+      showSpeechBubble('geg-2', 'Geblockt!', 2500);
+      showSpeechBubble('tsv-10', 'Mist...', 2500);
     }
   });
 }
@@ -1860,11 +2212,12 @@ function applyPreset(type) {
 
 // SZENARIO 1: DIE 6 SUCHEN
 function simFind6Best() {
-  runSimulationWithReset('🟢 SZENARIO 1 (BEST): Pass zur 6 → Schulterblick & Aufdrehen → Freier Flügel!', 'success', () => {
+  runSimulationWithReset('🟢 SZENARIO 1 (BEST - PHASE 1/4): IV (Nr. 4) passt zur 6 (Nr. 6) – Zurufe: "Du hast Zeit!"', 'success', () => {
     const ball = players.find(p => p.id === 'ball');
     if (ball) { ball.x = 185; ball.y = 330; }
     renderPlayers();
 
+    // Phase 1: Pass zur 6
     animateTo([
       { id:'tsv-4',  x:180, y:330 },
       { id:'tsv-6',  x:340, y:330 },
@@ -1873,16 +2226,45 @@ function simFind6Best() {
       drawArrow(180, 330, 340, 330, '#22c55e', 'arr-green');
       showSpeechBubble('tsv-6', 'Du hast Zeit! Dreh auf!', 2000);
       animateTo([{ id:'ball', x:335, y:330 }], 500, () => {
+
+        // Phase 2: Schulterblick & Aufdrehen
         simTimeout(() => {
+          setStatus('🟢 SZENARIO 1 (BEST - PHASE 2/4): 6er macht Schulterblick, nimmt Ball mit und dreht nach vorne auf!', 'success');
           clearDrawings();
-          drawArrow(340, 330, 510, 570, '#22c55e', 'arr-green');
           animateTo([
-            { id:'ball',   x:500, y:560 },
-            { id:'tsv-11', x:510, y:570 }
-          ], 700, () => {
-            showSpeechBubble('tsv-11', 'Danke! Tempo!', 2500);
+            { id:'tsv-6', x:380, y:330 },
+            { id:'ball',  x:390, y:330 }
+          ], 500, () => {
+            showSpeechBubble('tsv-6', 'Schulterblick! Alles frei!', 2000);
+
+            // Phase 3: Spielverlagerung auf den Flügel
+            simTimeout(() => {
+              setStatus('🟢 SZENARIO 1 (BEST - PHASE 3/4): Diagonale Spielverlagerung auf die freie Außenbahn (RM Nr. 11)!', 'success');
+              drawArrow(390, 330, 520, 560, '#22c55e', 'arr-green');
+              animateTo([
+                { id:'ball',   x:520, y:560 },
+                { id:'tsv-11', x:530, y:570 }
+              ], 700, () => {
+                showSpeechBubble('tsv-11', 'Flügel frei! Tempo!', 2200);
+
+                // Phase 4: Flanke & Torschuss
+                simTimeout(() => {
+                  setStatus('🎉 TOOOOOOR! Flanke vors Tor – Stürmerin Nr. 9 vollendet per Direktabnahme!', 'success');
+                  clearDrawings();
+                  drawArrow(530, 570, 880, 330, '#22c55e', 'arr-green');
+                  animateTo([
+                    { id:'tsv-9', x:880, y:330 },
+                    { id:'ball',  x:880, y:330 }
+                  ], 650, () => {
+                    showSpeechBubble('tsv-9', 'Direktabnahme! TOR! 🎉', 2600);
+                    drawArrow(880, 330, 955, 330, '#22c55e', 'arr-green');
+                    animateTo([{ id:'ball', x:955, y:330 }], 350);
+                  });
+                }, 750);
+              });
+            }, 800);
           });
-        }, 800);
+        }, 750);
       });
     });
   });
@@ -1919,12 +2301,13 @@ function simFind6Worst() {
 
 // SZENARIO 2: FLÜGELANGRIFF & FLANKE
 function simWingAttackBest() {
-  runSimulationWithReset('🟢 SZENARIO 2 (BEST): Flanke auf den 1. Pfosten, Stürmerin kreuzt, Tor!', 'success', () => {
+  runSimulationWithReset('🟢 SZENARIO 2 (BEST - PHASE 1/4): LM (Nr. 7) bricht bis zur Grundlinie durch!', 'success', () => {
+    // Phase 1: Durchbruch über Außen
     animateTo([
       { id:'tsv-7',  x:810, y:90  },
-      { id:'tsv-9',  x:760, y:280 },
-      { id:'tsv-10', x:680, y:330 },
-      { id:'tsv-11', x:750, y:430 },
+      { id:'tsv-9',  x:740, y:280 },
+      { id:'tsv-10', x:670, y:330 },
+      { id:'tsv-11', x:730, y:430 },
       { id:'tsv-6',  x:580, y:330 },
       { id:'ball',   x:800, y:95  },
       { id:'geg-1',  x:920, y:330 },
@@ -1932,17 +2315,41 @@ function simWingAttackBest() {
       { id:'geg-2',  x:840, y:220 },
       { id:'geg-3',  x:840, y:440 }
     ], 600, () => {
-      drawArrow(800, 95, 880, 280, '#22c55e', 'arr-green');
-      animateTo([
-        { id:'ball',   x:880, y:280 },
-        { id:'tsv-9',  x:880, y:280 },
-        { id:'tsv-11', x:890, y:380 },
-        { id:'tsv-10', x:770, y:330 }
-      ], 600, () => {
-        showSpeechBubble('tsv-9', 'Direktabnahme! Tor! 🎉', 2500);
-        drawArrow(880, 280, 950, 310, '#22c55e', 'arr-green');
-        animateTo([{ id:'ball', x:950, y:310 }], 400);
-      });
+      showSpeechBubble('tsv-7', 'Ich ziehe durch!', 2000);
+
+      // Phase 2: Stürmerin kreuzt 1. Pfosten
+      simTimeout(() => {
+        setStatus('🟢 SZENARIO 2 (BEST - PHASE 2/4): ST (Nr. 9) kreuzt an den 1. Pfosten und bindet beide Verteidigerinnen!', 'success');
+        animateTo([
+          { id:'tsv-9', x:870, y:270 },
+          { id:'geg-4', x:870, y:290 }
+        ], 550, () => {
+          showSpeechBubble('tsv-9', '1. Pfosten binden!', 2000);
+
+          // Phase 3: Pass in den Rückraum zu Nr. 10
+          simTimeout(() => {
+            setStatus('🟢 SZENARIO 2 (BEST - PHASE 3/4): Scharfer Rückpass von der Grundlinie in den Rückraum zu Nr. 10!', 'success');
+            drawArrow(800, 95, 770, 330, '#22c55e', 'arr-green');
+            animateTo([
+              { id:'ball',   x:770, y:330 },
+              { id:'tsv-10', x:770, y:330 },
+              { id:'tsv-11', x:880, y:390 }
+            ], 650, () => {
+              showSpeechBubble('tsv-10', 'Rückraum frei!', 2000);
+
+              // Phase 4: Trockener Abschluss ins Eck
+              simTimeout(() => {
+                setStatus('🎉 TOOOOOOR! Trockener Flachschuss ins Toreck – perfekte Box-Besetzung!', 'success');
+                clearDrawings();
+                drawArrow(770, 330, 955, 310, '#22c55e', 'arr-green');
+                animateTo([{ id:'ball', x:955, y:310 }], 400, () => {
+                  showSpeechBubble('tsv-10', 'Flach ins Eck! TOR! 🎉', 2600);
+                });
+              }, 650);
+            });
+          }, 750);
+        });
+      }, 750);
     });
   });
 }
@@ -2065,6 +2472,171 @@ function simCounterPressWorst() {
         showSpeechBubble('geg-7', 'Danke für die Zeit!', 2500);
       });
     });
+  });
+}
+
+// SZENARIO 7: ECKBALL
+function simCornerBest() {
+  runSimulationWithReset('🟢 SZENARIO 7 (BEST - PHASE 1/4): Eckball-Variante! Nr. 7 läuft kurz an die 16er-Ecke entgegen!', 'success', () => {
+    applyPreset('cornerGood');
+    simTimeout(() => {
+      drawArrow(945, 620, 870, 560, '#22c55e', 'arr-green');
+      showSpeechBubble('tsv-7', 'Kurz anbieten!', 2200);
+
+      simTimeout(() => {
+        setStatus('🟢 SZENARIO 7 (BEST - PHASE 2/4): Kurzpass ausgeführt! geg-6 rückt raus – Raum am 2. Pfosten öffnet sich!', 'success');
+        clearDrawings();
+        animateTo([
+          { id:'ball',   x:870, y:560 },
+          { id:'geg-6',  x:865, y:530 },
+          { id:'tsv-7',  x:870, y:560 }
+        ], 600, () => {
+          showSpeechBubble('tsv-11', 'Langer Pfosten frei!', 2200);
+
+          simTimeout(() => {
+            setStatus('🟢 SZENARIO 7 (BEST - PHASE 3/4): Butterweiche Flanke an den 2. Pfosten! Nr. 10 springt zum Kopfball!', 'success');
+            drawArrow(870, 560, 890, 360, '#22c55e', 'arr-green');
+            animateTo([
+              { id:'ball',   x:890, y:360 },
+              { id:'tsv-10', x:890, y:360 },
+              { id:'tsv-9',  x:865, y:280 }
+            ], 700, () => {
+              showSpeechBubble('tsv-10', 'KOPFBALL! 💥', 2200);
+
+              simTimeout(() => {
+                setStatus('🎉 TOOOOOOR! Kopfball ins lange Eck! Kette & 6 sichern die Mittellinie perfekt ab!', 'success');
+                drawArrow(890, 360, 955, 330, '#22c55e', 'arr-green');
+                animateTo([{ id:'ball', x:955, y:330 }], 400, () => {
+                  showSpeechBubble('tsv-6', 'Klasse Tor! Kette steht!', 2600);
+                });
+              }, 700);
+            });
+          }, 800);
+        });
+      }, 900);
+    }, 500);
+  });
+}
+
+function simCornerWorst() {
+  runSimulationWithReset('🔴 SZENARIO 7 (WORST - PHASE 1/4): Alle 8 Feldspielerinnen im 5m-Raum geklumpt! 0 Restabsicherung!', 'warning', () => {
+    applyPreset('cornerBad');
+    simTimeout(() => {
+      showSpeechBubble('geg-9', 'Keine Absicherung! Konter!', 2200);
+
+      simTimeout(() => {
+        setStatus('🔴 SZENARIO 7 (WORST - PHASE 2/4): Ball fliegt harmlos genau in die Hände der gegnerischen TW!', 'warning');
+        drawArrow(945, 620, 930, 330, '#ef4444', 'arr-red');
+        animateTo([{ id:'ball', x:930, y:330 }], 650, () => {
+          showSpeechBubble('geg-1', 'Leichte Beute! Abwurf!', 2200);
+
+          simTimeout(() => {
+            setStatus('🔴 SZENARIO 7 (WORST - PHASE 3/4): TW wirft blitzschnell zur freien Stürmerin geg-9 ab – Kette pennt!', 'warning');
+            clearDrawings();
+            drawArrow(930, 330, 520, 330, '#ef4444', 'arr-red');
+            animateTo([
+              { id:'ball',  x:520, y:330 },
+              { id:'geg-9', x:515, y:330 }
+            ], 700, () => {
+              showSpeechBubble('tsv-4', 'ZURÜCKRENNEN! HILFE!', 2200);
+
+              simTimeout(() => {
+                setStatus('❌ GEGENTOR! Stürmerin läuft allein auf die TW zu – Strafe für 0 Restverteidigung!', 'warning');
+                drawArrow(520, 330, 80, 330, '#ef4444', 'arr-red');
+                animateTo([
+                  { id:'ball',  x:80,  y:330 },
+                  { id:'geg-9', x:130, y:330 }
+                ], 800, () => {
+                  showSpeechBubble('geg-9', 'Danke für das Geschenk!', 2500);
+                });
+              }, 700);
+            });
+          }, 800);
+        });
+      }, 900);
+    }, 500);
+  });
+}
+
+// SZENARIO 8: FREISTOSS (22M)
+function simFreeKickBest() {
+  runSimulationWithReset('🟢 SZENARIO 8 (BEST - PHASE 1/4): Freistoß 22m halblinks! Finte: Nr. 7 sprintet an und täuscht Schuss an!', 'success', () => {
+    applyPreset('freeKickGood');
+    simTimeout(() => {
+      animateTo([{ id:'tsv-7', x:765, y:190 }], 500, () => {
+        showSpeechBubble('tsv-7', 'ICH SCHIESSE! (Finte)', 2000);
+
+        simTimeout(() => {
+          setStatus('🟢 SZENARIO 8 (BEST - PHASE 2/4): Mauer springt hoch! Nr. 10 chippt den Pass um die Mauer zu Nr. 9!', 'success');
+          drawArrow(690, 250, 805, 215, '#22c55e', 'arr-green');
+          animateTo([
+            { id:'ball',  x:805, y:215 },
+            { id:'tsv-9', x:805, y:215 }
+          ], 650, () => {
+            showSpeechBubble('tsv-9', 'Ball erlaufen!', 2000);
+
+            simTimeout(() => {
+              setStatus('🟢 SZENARIO 8 (BEST - PHASE 3/4): Nr. 9 legt quer vor das Tor auf den 2. Pfosten zu Nr. 11!', 'success');
+              clearDrawings();
+              drawArrow(805, 215, 860, 400, '#22c55e', 'arr-green');
+              animateTo([
+                { id:'ball',   x:860, y:400 },
+                { id:'tsv-11', x:860, y:400 }
+              ], 600, () => {
+                showSpeechBubble('tsv-11', 'DIREKT!', 2000);
+
+                simTimeout(() => {
+                  setStatus('🎉 TOOOOOOR! Eiskalt eingeschoben nach einstudierter Freistoß-Finte!', 'success');
+                  drawArrow(860, 400, 955, 340, '#22c55e', 'arr-green');
+                  animateTo([{ id:'ball', x:955, y:340 }], 350, () => {
+                    showSpeechBubble('tsv-10', 'Genau so einstudiert!', 2600);
+                  });
+                }, 600);
+              });
+            }, 750);
+          });
+        }, 800);
+      });
+    }, 450);
+  });
+}
+
+function simFreeKickWorst() {
+  runSimulationWithReset('🔴 SZENARIO 8 (WORST - PHASE 1/4): Überhasteter Vollspannschuss direkt in die gegnerische 2er-Mauer!', 'warning', () => {
+    applyPreset('freeKickBad');
+    simTimeout(() => {
+      drawArrow(710, 250, 780, 250, '#ef4444', 'arr-red');
+      animateTo([{ id:'ball', x:775, y:250 }], 450, () => {
+        showSpeechBubble('geg-2', 'GEBLOCKT!', 2000);
+
+        simTimeout(() => {
+          setStatus('🔴 SZENARIO 8 (WORST - PHASE 2/4): Ball prallt in den Mittelkreis – freier Ball im Mittelfeld!', 'warning');
+          clearDrawings();
+          drawArrow(775, 250, 490, 330, '#ef4444', 'arr-red');
+          animateTo([{ id:'ball', x:490, y:330 }], 650, () => {
+            showSpeechBubble('tsv-10', 'Mist...!', 2000);
+
+            simTimeout(() => {
+              setStatus('🔴 SZENARIO 8 (WORST - PHASE 3/4): Freeze & Hadern! Unser Team schaltet ab, Gegner sprintet los!', 'warning');
+              animateTo([{ id:'geg-9', x:485, y:330 }], 550, () => {
+                showSpeechBubble('geg-9', 'Mein Ball! Konter!', 2000);
+
+                simTimeout(() => {
+                  setStatus('❌ GEGENTOR! Schneller Gegenstoß bestraft das mentale Abschalten nach eigenem Freistoß!', 'warning');
+                  drawArrow(490, 330, 80, 330, '#ef4444', 'arr-red');
+                  animateTo([
+                    { id:'ball',  x:80,  y:330 },
+                    { id:'geg-9', x:135, y:330 }
+                  ], 750, () => {
+                    showSpeechBubble('geg-9', 'Danke für die Vorlage!', 2500);
+                  });
+                }, 700);
+              });
+            }, 750);
+          });
+        }, 750);
+      });
+    }, 450);
   });
 }
 
@@ -2239,7 +2811,7 @@ function handlePlayerTap(p) {
       setStatus(`⚽ Nr. ${p.num} (${p.role}) hat den Ball! Tippe auf eine Mitspielerin für den Pass.`, 'success');
       showSpeechBubble(p.id, 'Ich hab den Ball!', 2000);
     } else {
-      setStatus(`Gegnerin Nr. ${p.num} kann den TSV-Ball nicht annehmen. Wähle eine rote TSV-Spielerin!`, 'warning');
+      setStatus(`Gegnerin Nr. ${p.num} kann den Ball nicht annehmen. Wähle eine eigene Spielerin (Rot)!`, 'warning');
     }
     return;
   }
@@ -2526,10 +3098,11 @@ function stopAllSimulations() {
 }
 
 function simTimeout(fn, delay) {
+  const scaledDelay = Math.max(30, Math.round(delay / simSpeedMultiplier));
   const id = setTimeout(() => {
     activeSimTimeouts = activeSimTimeouts.filter(t => t !== id);
     fn();
-  }, delay);
+  }, scaledDelay);
   activeSimTimeouts.push(id);
   return id;
 }
@@ -2539,10 +3112,11 @@ function animateTo(targetCoords, duration = 800, onDone) {
     cancelAnimationFrame(currentAnimFrame);
     currentAnimFrame = null;
   }
+  const effectiveDuration = Math.max(60, Math.round(duration / simSpeedMultiplier));
   const t0 = performance.now();
   const starts = players.map(p => ({ x: p.x, y: p.y }));
   function step(now) {
-    const prog = Math.min((now - t0) / duration, 1);
+    const prog = Math.min((now - t0) / effectiveDuration, 1);
     const ease = prog * (2 - prog);
     players.forEach((p, i) => {
       const tgt = targetCoords.find(t => t.id === p.id);
@@ -2623,7 +3197,8 @@ function showSpeechBubble(playerId, text, duration = 3000) {
     <text x="0" y="-6" text-anchor="middle" font-size="9" font-weight="900" fill="#000">${text}</text>
   `;
   layerBubbles.appendChild(g);
-  setTimeout(() => g.remove(), duration);
+  const scaledDur = Math.max(700, Math.round(duration / simSpeedMultiplier));
+  setTimeout(() => g.remove(), scaledDur);
 }
 
 function drawArrow(x1, y1, x2, y2, color, markerId) {
